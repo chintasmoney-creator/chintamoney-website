@@ -2,9 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ChintasMoney — Your money has a memory</title>
-  <meta name="description" content="ChintasMoney — a personal financial intelligence platform. Less Chinta. More Clarity." />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>ChintasMoney — Trader Report Card</title>
+  <meta name="description" content="Get your Discipline Score, trader personality and biggest mistakes. Discipline over profit." />
+  <meta name="theme-color" content="#0b1533" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="assets/favicon.png" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="ChintasMoney" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -12,7 +19,29 @@
 </head>
 <body>
   <div id="root"></div>
+
+  <!-- Install prompt (appears when the browser allows it) -->
+  <button id="installBtn" hidden style="position:fixed;right:16px;bottom:16px;z-index:200;border:0;border-radius:999px;padding:.7rem 1.1rem;font-weight:700;color:#fff;background:linear-gradient(90deg,#0f9d76,#14b8a6);box-shadow:0 10px 24px rgba(20,184,166,.4);cursor:pointer">⬇ Install app</button>
+
   <script src="store.js"></script>
   <script src="app.js"></script>
+  <script>
+    // ---- PWA: service worker + install prompt ----
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("sw.js").catch(function () {});
+      });
+    }
+    var deferredPrompt = null, installBtn = document.getElementById("installBtn");
+    window.addEventListener("beforeinstallprompt", function (e) {
+      e.preventDefault(); deferredPrompt = e; installBtn.hidden = false;
+    });
+    installBtn.addEventListener("click", function () {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.finally(function () { deferredPrompt = null; installBtn.hidden = true; });
+    });
+    window.addEventListener("appinstalled", function () { installBtn.hidden = true; });
+  </script>
 </body>
 </html>

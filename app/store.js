@@ -100,7 +100,7 @@
   // Overtrading: days with > 3 trades lose points.
   function stats() {
     var s = load(), tr = s.trades.slice().sort(function (a, b) { return new Date(b.date) - new Date(a.date); });
-    if (!tr.length) return { count: 0, discipline: 0, winRate: 0, personality: personality([]), byDay: {} };
+    if (!tr.length) return { count: 0, discipline: 0, winRate: 0, totalPnl: 0, avgWin: 0, avgLoss: 0, rr: 0, noSL: 0, emotional: 0, overtradeDays: 0, personality: personality([]), byDay: {}, trades: [] };
     var wins = tr.filter(isWin), losses = tr.filter(function (t) { return !isWin(t); });
     var avgWin = wins.length ? wins.reduce(function (a, t) { return a + pnl(t); }, 0) / wins.length : 0;
     var avgLoss = losses.length ? losses.reduce(function (a, t) { return a + pnl(t); }, 0) / losses.length : 0;

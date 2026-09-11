@@ -172,9 +172,16 @@
   VIEWS.trades = function () {
     var s = CM.load(), st = CM.stats();
     var v = el('<div></div>');
-    v.appendChild(topbar("Trade Journal", st.count + " trades logged", [logBtn()]));
+    var exp = el('<button class="btn btn-sm">⬇ Export CSV</button>'); exp.addEventListener("click", exportCSV);
+    var imp = el('<button class="btn btn-sm">⬆ Import CSV</button>'); imp.addEventListener("click", importCSV);
+    v.appendChild(topbar("Trade Journal", st.count + " trades logged", [exp, imp, logBtn()]));
     var limit = CM.PLANS[s.profile.plan].limits.history;
     var shown = st.trades;
+    if (!shown.length) {
+      var empty = el('<div class="card paywall"><div class="lock-ic">📓</div><h3>No trades yet</h3><p class="hint">Log your first trade to see your Discipline Score come alive.</p></div>');
+      var b = el('<button class="btn btn-primary" style="margin-top:8px">＋ Log a trade</button>'); b.addEventListener("click", function () { go("log"); });
+      empty.appendChild(b); v.appendChild(empty); return v;
+    }
     var c = el('<div class="card" style="overflow-x:auto"><table class="tbl"><thead><tr><th>Symbol</th><th>Setup</th><th class="num">P&L</th><th>Exit reason</th><th>Emotion</th><th class="num">Disc.</th><th>When</th><th></th></tr></thead><tbody></tbody></table></div>');
     var tb = c.querySelector("tbody");
     shown.forEach(function (t) {
@@ -193,6 +200,79 @@
     if (limit !== Infinity) v.appendChild(el('<div class="notice" style="margin-top:12px">Free plan analyses your data — full unlimited history &amp; export is in <b>Plus</b>.</div>'));
     return v;
   };
+
+  // ---- Modal dialog --------------------------------------------------------
+  function dialog(title, bodyHtml, onMount) {
+    var back = el('<div style="position:fixed;inset:0;background:rgba(11,21,51,.55);z-index:120;display:grid;place-items:center;padding:18px"></div>');
+    var box = el('<div style="background:#fff;border-radius:18px;max-width:620px;width:100%;max-height:88vh;overflow:auto;box-shadow:var(--shadow-lg)"></div>');
+    var hd = el('<div style="display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff"><h3 style="margin:0;flex:1">' + title + '</h3></div>');
+    var x = el('<button class="btn btn-sm">✕</button>'); x.addEventListener("click", close); hd.appendChild(x);
+    var body = el('<div style="padding:20px"></div>'); body.innerHTML = bodyHtml;
+    box.appendChild(hd); box.appendChild(body); back.appendChild(box); document.body.appendChild(back);
+    back.addEventListener("click", function (e) { if (e.target === back) close(); });
+    function close() { if (back.parentNode) document.body.removeChild(back); }
+    if (onMount) onMount(body, close);
+    return { close: close, body: body };
+  }
+
+  // ---- CSV export / import -------------------------------------------------
+  var CSV_COLS = ["symbol", "side", "qty", "entry", "exit", "plannedSL", "setup", "exit_reason", "emotion", "date"];
+  function exportCSV() {
+    var tr = CM.load().trades;
+    var rows = [CSV_COLS.join(",")].concat(tr.map(function (t) {
+      return CSV_COLS.map(function (k) { var val = t[k] == null ? "" : String(t[k]); return /[",\n]/.test(val) ? '"' + val.replace(/"/g, '""') + '"' : val; }).join(",");
+    }));
+    var blob = new Blob([rows.join("\n")], { type: "text/csv" });
+    var a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+    a.download = "chintasmoney-trades.csv"; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+  function importCSV() {
+    var body = '<p class="hint">Upload a CSV with columns:<br><code>' + CSV_COLS.join(", ") + '</code><br>Only <b>symbol</b> is required; missing stop-loss counts as “no SL”.</p>' +
+      '<input type="file" id="csvf" accept=".csv,text/csv" style="margin-top:10px" /><p class="hint" id="csvnote" style="margin-top:8px"></p>';
+    dialog("Import trades from CSV", body, function (b, close) {
+      b.querySelector("#csvf").addEventListener("change", function (e) {
+        var f = e.target.files[0]; if (!f) return;
+        var rd = new FileReader();
+        rd.onload = function () {
+          try {
+            var n = parseCSV(String(rd.result));
+            b.querySelector("#csvnote").innerHTML = '<span class="pos">Imported ' + n + ' trade(s).</span>';
+            setTimeout(function () { close(); go("home"); render(); }, 700);
+          } catch (err) { b.querySelector("#csvnote").innerHTML = '<span class="neg">Could not read that file.</span>'; }
+        };
+        rd.readAsText(f);
+      });
+    });
+  }
+  function parseCSV(text) {
+    var lines = text.split(/\r?\n/).filter(function (l) { return l.trim(); });
+    if (!lines.length) return 0;
+    var head = splitCSVLine(lines[0]).map(function (h) { return h.trim().toLowerCase(); });
+    var idx = {}; CSV_COLS.forEach(function (k) { idx[k] = head.indexOf(k.toLowerCase()); });
+    var count = 0;
+    for (var i = 1; i < lines.length; i++) {
+      var cells = splitCSVLine(lines[i]);
+      var get = function (k) { return idx[k] >= 0 ? (cells[idx[k]] || "").trim() : ""; };
+      var sym = get("symbol"); if (!sym) continue;
+      var sl = get("plannedSL");
+      CM.addTrade({ symbol: sym, side: get("side") || "Buy", qty: +get("qty") || 0, entry: +get("entry") || 0,
+        exit: +get("exit") || 0, plannedSL: sl === "" ? null : +sl, target: null,
+        setup: get("setup") || "Other", exit_reason: get("exit_reason") || "Hit target",
+        emotion: get("emotion") || "Calm", date: get("date") || new Date().toISOString() });
+      count++;
+    }
+    return count;
+  }
+  function splitCSVLine(line) {
+    var out = [], cur = "", q = false;
+    for (var i = 0; i < line.length; i++) {
+      var ch = line[i];
+      if (q) { if (ch === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
+      else { if (ch === '"') q = true; else if (ch === ",") { out.push(cur); cur = ""; } else cur += ch; }
+    }
+    out.push(cur); return out;
+  }
 
   // ---- MISTAKE INSIGHTS ----------------------------------------------------
   VIEWS.insights = function () {
