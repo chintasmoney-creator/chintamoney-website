@@ -38,6 +38,7 @@
     { id: "changed", label: "What Changed", ic: "⟳" },
     { id: "reports", label: "Reports", ic: "▦" },
     { id: "review", label: "Money Review", ic: "☑" },
+    { id: "tools", label: "Search My Money", ic: "⌕" },
     { id: "documents", label: "Documents", ic: "▣" },
     { sep: true },
     { id: "profile", label: "Profile & Plan", ic: "☰" }
@@ -456,6 +457,92 @@
     v.appendChild(c);
     return v;
   };
+
+  // ---- TOOLS: Search My Money ----------------------------------------------
+  var lastSearch = "";
+  VIEWS.tools = function () {
+    var v = el('<div></div>');
+    v.appendChild(topbar("Search My Money", "Your personal financial knowledge base — search your own history."));
+    var c = el('<div class="card"></div>');
+    var box = el('<div class="composer" style="margin-top:0"><input placeholder="e.g. every stock I sold at a loss, when did I first buy TCS, goals due in 12 months" /><button class="btn btn-primary">Search</button></div>');
+    var input = box.querySelector("input"), btn = box.querySelector("button");
+    input.value = lastSearch;
+    c.appendChild(box);
+    var sug = el('<div class="suggest"></div>');
+    ["stocks I hold at a loss", "when did I first buy TCS", "highest profit", "invested in IT", "goals due in 12 months", "positions with no thesis"].forEach(function (q) {
+      var b = el('<button>' + q + '</button>'); b.addEventListener("click", function () { input.value = q; run(); }); sug.appendChild(b);
+    });
+    c.appendChild(sug);
+    var results = el('<div style="margin-top:14px"></div>');
+    c.appendChild(results);
+    function run() { lastSearch = input.value; results.innerHTML = ""; results.appendChild(searchMoney(input.value)); }
+    btn.addEventListener("click", run);
+    input.addEventListener("keydown", function (e) { if (e.key === "Enter") run(); });
+    if (lastSearch) run();
+    v.appendChild(c);
+    return v;
+  };
+  function resultCard(title, rows) {
+    if (!rows.length) return el('<p class="hint">No matches in your data.</p>');
+    var c = el('<div><div style="font-weight:600;margin-bottom:6px">' + esc(title) + ' <span class="hint">· ' + rows.length + '</span></div></div>');
+    rows.forEach(function (r) { c.appendChild(el('<div class="attn"><div class="dot ' + (r.level || "green") + '"></div><div><div class="t">' + esc(r.t) + '</div><div class="d">' + esc(r.d) + '</div></div></div>')); });
+    return c;
+  }
+  function searchMoney(q) {
+    var s = CM.load(), lc = (q || "").toLowerCase(), wrap = el('<div></div>');
+    if (!lc.trim()) { wrap.appendChild(el('<p class="hint">Type a question about your money above.</p>')); return wrap; }
+    var matched = false;
+    if (/loss|losing|down|red/.test(lc)) {
+      matched = true;
+      var losers = s.holdings.filter(function (h) { return CM.pnl(h) < 0; });
+      wrap.appendChild(resultCard("Holdings currently at a loss", losers.map(function (h) { return { level: "red", t: h.ticker + " · " + fmt(CM.pnl(h)) + " (" + pct(CM.pnl(h) / CM.invested(h)) + ")", d: h.name + " · bought " + ago(h.addedAt) }; })));
+    }
+    if (/first|when.*buy|bought/.test(lc)) {
+      matched = true;
+      var tk = (lc.match(/\b([a-z]{2,12})\b(?=[^a-z]*$)/) || [])[1];
+      var hits = s.holdings.filter(function (h) { return !tk || h.ticker.toLowerCase().indexOf(tk) === 0 || h.name.toLowerCase().indexOf(tk) >= 0; })
+        .sort(function (a, b) { return new Date(a.addedAt) - new Date(b.addedAt); });
+      wrap.appendChild(resultCard("Purchase history (earliest first)", hits.map(function (h) { return { t: h.ticker + " · first tracked " + new Date(h.addedAt).toLocaleDateString("en-IN"), d: h.qty + " @ " + fmt(h.cost) + " (" + ago(h.addedAt) + ")" }; })));
+    }
+    if (/profit|gain|best|highest|winner/.test(lc)) {
+      matched = true;
+      var win = s.holdings.slice().sort(function (a, b) { return CM.pnl(b) - CM.pnl(a); }).slice(0, 5);
+      wrap.appendChild(resultCard("Top holdings by profit", win.map(function (h) { return { level: CM.pnl(h) >= 0 ? "green" : "red", t: h.ticker + " · " + fmt(CM.pnl(h)), d: pct(CM.pnl(h) / CM.invested(h)) + " · " + h.sector }; })));
+    }
+    if (/invest.*in|exposure|sector|\bit\b|tech|financ|auto/.test(lc)) {
+      matched = true;
+      var pf = CM.portfolioStats();
+      var rows = Object.keys(pf.bySector).sort(function (a, b) { return pf.bySector[b] - pf.bySector[a]; })
+        .filter(function (k) { var m = lc.match(/in ([a-z ]+)/); return !m || k.toLowerCase().indexOf(m[1].trim().slice(0, 4)) >= 0 || true; })
+        .map(function (k) { return { t: k + " · " + fmt(pf.bySector[k]), d: Math.round(pf.bySector[k] / pf.value * 100) + "% of portfolio" }; });
+      wrap.appendChild(resultCard("Exposure by sector", rows));
+    }
+    if (/goal|due|deadline/.test(lc)) {
+      matched = true;
+      var m = lc.match(/(\d+)\s*month/); var months = m ? +m[1] : 12;
+      var due = s.goals.filter(function (g) { return g.dueMonths <= months; });
+      wrap.appendChild(resultCard("Goals due within " + months + " months", due.map(function (g) { return { level: g.priority === "high" ? "red" : "yellow", t: g.name + " · due ~" + g.dueMonths + "m", d: Math.round(g.current / g.target * 100) + "% funded (" + fmtShort(g.current) + " / " + fmtShort(g.target) + ")" }; })));
+    }
+    if (/no thesis|untracked|without/.test(lc)) {
+      matched = true;
+      var un = s.holdings.filter(function (h) { return !h.thesisId; });
+      wrap.appendChild(resultCard("Positions with no recorded thesis", un.map(function (h) { return { level: "yellow", t: h.ticker, d: h.name + " · " + fmt(CM.value(h)) }; })));
+    }
+    if (/decision|journal|why did/.test(lc)) {
+      matched = true;
+      wrap.appendChild(resultCard("Decisions", s.decisions.map(function (d) { return { t: d.text, d: d.reason + " · " + new Date(d.date).toLocaleDateString("en-IN") }; })));
+    }
+    if (!matched) {
+      // free-text fallback across everything
+      var rows = [];
+      s.holdings.forEach(function (h) { if ((h.ticker + " " + h.name + " " + h.sector).toLowerCase().indexOf(lc) >= 0) rows.push({ t: h.ticker + " (holding)", d: h.name + " · " + h.sector }); });
+      s.decisions.forEach(function (d) { if ((d.text + " " + d.reason).toLowerCase().indexOf(lc) >= 0) rows.push({ t: d.text, d: d.reason }); });
+      s.theses.forEach(function (t) { if ((t.ticker + " " + t.title).toLowerCase().indexOf(lc) >= 0) rows.push({ t: t.ticker + " (thesis)", d: t.title }); });
+      s.goals.forEach(function (g) { if (g.name.toLowerCase().indexOf(lc) >= 0) rows.push({ t: g.name + " (goal)", d: Math.round(g.current / g.target * 100) + "% funded" }); });
+      wrap.appendChild(resultCard('Matches for "' + q + '"', rows));
+    }
+    return wrap;
+  }
 
   // ---- CHINTA AI -----------------------------------------------------------
   var chatLog = [];

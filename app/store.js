@@ -37,12 +37,26 @@
     }
   };
 
+  // ---- Admin config (price overrides + feature flags), persisted separately -
+  var ADMIN_KEY = "chintasmoney.admin.v1";
+  function adminConfig() {
+    var def = { priceOverrides: {}, flags: { traderMode: true, documents: true, chintaAI: true, whatChanged: true } };
+    try { var raw = localStorage.getItem(ADMIN_KEY); return raw ? Object.assign(def, JSON.parse(raw)) : def; }
+    catch (e) { return def; }
+  }
+  function saveAdmin(cfg) { try { localStorage.setItem(ADMIN_KEY, JSON.stringify(cfg)); } catch (e) {} applyOverrides(); }
+  function applyOverrides() {
+    var cfg = adminConfig();
+    Object.keys(cfg.priceOverrides || {}).forEach(function (id) { if (PLANS[id]) PLANS[id].price = cfg.priceOverrides[id]; });
+  }
+  applyOverrides();
+
   // Which nav areas each capability unlocks (used for soft paywall gating).
   var FEATURE_MATRIX = {
     home: "free", chinta: "free", money: "free", investments: "free",
     decisions: "free", goals: "free", profile: "free", documents: "free",
-    thesis: "plus", changed: "plus", reports: "plus", review: "plus",
-    trading: "pro", tools: "pro"
+    thesis: "plus", changed: "plus", reports: "plus", review: "plus", tools: "free",
+    trading: "pro"
   };
   var PLAN_RANK = { free: 0, plus: 1, pro: 2 };
 
@@ -248,6 +262,9 @@
   // ---- Public API ------------------------------------------------------------
   global.CM = {
     PLANS: PLANS, FEATURE_MATRIX: FEATURE_MATRIX, planAllows: planAllows,
+    adminConfig: adminConfig, saveAdmin: saveAdmin,
+    setPlanPrice: function (id, price) { var c = adminConfig(); c.priceOverrides[id] = price; saveAdmin(c); },
+    setFlag: function (k, v) { var c = adminConfig(); c.flags[k] = v; saveAdmin(c); },
     load: load, save: save, reset: reset, uid: uid, adapters: adapters,
     invested: invested, value: value, pnl: pnl,
     portfolioStats: portfolioStats, moneyHealth: moneyHealth, patterns: patterns,
