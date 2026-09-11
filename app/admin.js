@@ -142,8 +142,8 @@
       var g = el('<div class="grid g4"></div>');
       g.appendChild(stat("AI questions (all)", String(users.reduce(function (a, u) { return a + u.ai; }, 0)), "all-time"));
       g.appendChild(stat("This device", String(s.usage.aiQuestions), "AI questions used"));
-      g.appendChild(stat("Free limit", String(CM.PLANS.free.limits.aiQuestions), "questions"));
-      g.appendChild(stat("Pro limit", String(CM.PLANS.pro.limits.aiQuestions), "questions"));
+      g.appendChild(stat("Free history", String(CM.PLANS.free.limits.history) + "d", "trade history"));
+      g.appendChild(stat("Plus history", "∞", "unlimited"));
       v.appendChild(g);
       var c = el('<div class="card" style="margin-top:16px"><div class="card-hd"><h3>AI usage by user (mock)</h3></div></div>');
       users.slice().sort(function (a, b) { return b.ai - a.ai; }).forEach(function (u) {
@@ -156,13 +156,11 @@
     data: function () {
       var v = el('<div></div>');
       var rows = [
-        ["Market data", CM.adapters.marketData.isLive, "Quotes, prices, technicals"],
-        ["Payments", CM.adapters.payments.isLive, "Gateway for subscriptions"],
-        ["Broker sync", false, "Import holdings & trades"],
-        ["Corporate filings", false, "Results, announcements"],
-        ["News / events", false, "Personalised What-Changed signals"],
-        ["Document parsing", false, "Annual reports, factsheets"],
-        ["Email / notifications", false, "Alerts & reviews"]
+        ["Broker / CSV import", CM.adapters.brokerImport.isLive, "Auto-import trades from broker or CSV"],
+        ["Payments", false, "Gateway for subscriptions"],
+        ["Notifications", CM.adapters.notifications.isLive, "Discipline nudges via push / WhatsApp / email"],
+        ["Card image export", false, "Render shareable report card as an image"],
+        ["Auth / accounts", false, "Real sign-up, sync across devices"]
       ];
       var c = el('<div class="card"><div class="card-hd"><h3>Integration adapters</h3></div></div>');
       rows.forEach(function (r) {

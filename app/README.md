@@ -1,18 +1,28 @@
-# ChintasMoney — MVP app
+# ChintasMoney — Trader Report Card (MVP app)
 
-A client-side SPA that runs the core decision-intelligence loop. No build step.
+A behavioural mirror for traders. Log your trades → get a **Discipline Score**,
+your **Trader Personality**, repeating **mistakes**, **streaks & badges**, a
+**shareable card**, and an evidence-based **Discipline Coach**.
+
+**It is NOT financial advice.** No buy/sell calls, no tips, no return claims —
+which keeps it legal and separate from any advisory business. All value comes
+from the trader's *own* logged data, so no paid market feed is needed to launch.
 
 ## Files
 - `index.html` — SPA shell
-- `store.js` — the **financial-memory** data layer (localStorage now; swap for an API/DB later). Holds plan config, seed/mock data, portfolio/health/pattern analytics, and an **adapter layer** for future broker/market/payment integrations.
-- `styles.css` — design system (navy / emerald-teal / green / gold / coral)
-- `app.js` — router + all views + onboarding + Chinta AI
+- `store.js` — data + memory layer (localStorage now; swap for API/DB later).
+  Holds plans, seed trades, and all analytics: discipline scoring, personality,
+  mistakes, setup performance, badges. Adapter stubs for broker/CSV import & notifications.
+- `styles.css` — design system
+- `app.js` — router + views (report card, log, journal, insights, setup
+  performance, coach, badges, leaderboard, shareable card, profile) + onboarding
+- `admin.html` / `admin.js` — admin console (users, subscriptions, editable
+  plan pricing, feature flags, usage, data-source status)
 
-## What's real vs. mock
-- **Real & persistent:** onboarding/persona, decision journal, thesis records, holdings you add, plan switching, Money Health / Risk Map / concentration / pattern analytics (all computed from your data), Chinta AI answers (evidence-grounded, from your data).
-- **Mock (clearly labelled):** market prices/LTP, "What Changed" signals, X-ray fundamentals, trading report, document parsing. These are where real APIs plug into `store.js`'s `adapters`.
-
-## Roadmap (needs a backend)
-Server auth, database, payments/subscriptions billing, admin panel, real broker/market-data/filings/news adapters, and a real LLM behind Chinta AI. The frontend is structured so these slot in without a rewrite.
-
-> Not investment advice. Not a SEBI-registered adviser. MVP data is illustrative.
+## Real vs. mock
+- **Real & computed from your data:** discipline score, personality, mistakes,
+  setup performance, badges, journal, coach answers.
+- **Mock (labelled):** other leaderboard traders, sample seed trades.
+- **Needs backend (next phase):** real accounts/auth + cross-device sync,
+  payments/subscriptions, broker/CSV import, card image export, push/WhatsApp
+  reminders, a real leaderboard, a real LLM behind the coach.
