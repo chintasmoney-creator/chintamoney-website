@@ -1,4 +1,4 @@
-// ChintaMoney — interactions
+// ChintasMoney — interactions
 (function () {
   var toggle = document.querySelector('.nav-toggle');
   var links = document.querySelector('.nav-links');
