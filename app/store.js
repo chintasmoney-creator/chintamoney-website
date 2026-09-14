@@ -29,7 +29,7 @@
       limits: { history: Infinity } }
   };
   var FEATURE_MATRIX = {
-    home: "free", log: "free", trades: "free", card: "free", profile: "free", calc: "free", analytics: "free", markets: "free", today: "free", report: "free",
+    home: "free", log: "free", trades: "free", card: "free", profile: "free", calc: "free", analytics: "free", markets: "free", today: "free", report: "free", dreams: "free",
     insights: "plus", coach: "plus", badges: "plus", leaderboard: "plus",
     strategy: "pro"
   };
@@ -58,6 +58,9 @@
       meta: { createdAt: new Date().toISOString(), seeded: true },
       profile: { name: "", onboarded: false, plan: "free", handle: "" },
       usage: { aiQuestions: 0 },
+      dreams: [
+        { id: "dm1", name: "Dream home", emoji: "🏡", target: 10000000, start: 200000, monthly: 25000, rate: 14, years: 12 }
+      ],
       trades: [
         T({ id: "s1", symbol: "NIFTY 24500 CE", side: "Buy", qty: 50, entry: 120, exit: 165, date: iso(1),  setup: "Breakout",  plannedSL: 95,  target: 170, exit_reason: "Hit target",         emotion: "Calm" }),
         T({ id: "s2", symbol: "BANKNIFTY 51000 PE", side: "Buy", qty: 30, entry: 210, exit: 150, date: iso(1),  setup: "Reversal",  plannedSL: null, target: null, exit_reason: "Revenge exit",      emotion: "Revenge" }),
@@ -238,6 +241,18 @@
   ];
   function chintaTip(seed) { return CHINTA_TIPS[(seed || Math.floor(Date.now() / 86400000)) % CHINTA_TIPS.length]; }
 
+  // ---- Wealth / dream projection (compounding — illustrative, not a promise) -
+  function project(start, monthly, ratePct, years) {
+    var rm = ratePct / 100 / 12, months = Math.round(years * 12), bal = start || 0, series = [bal];
+    for (var m = 1; m <= months; m++) { bal = bal * (1 + rm) + (monthly || 0); if (m % 12 === 0) series.push(bal); }
+    return { fv: bal, series: series, invested: (start || 0) + (monthly || 0) * months };
+  }
+  function monthsToTarget(start, monthly, ratePct, target) {
+    var rm = ratePct / 100 / 12, bal = start || 0, m = 0;
+    while (bal < target && m < 1200) { bal = bal * (1 + rm) + (monthly || 0); m++; }
+    return m >= 1200 ? null : m;
+  }
+
   var adapters = {
     brokerImport: { isLive: false, note: "Import trades from broker/CSV (mock in MVP)." },
     notifications: { isLive: false }
@@ -254,6 +269,10 @@
     stats: stats, personality: personality, badges: badges, mistakes: mistakes, setupPerformance: setupPerformance,
     equityCurve: equityCurve, disciplineTrend: disciplineTrend, winLoss: winLoss, emotionBreakdown: emotionBreakdown,
     engagement: engagement, chintaTip: chintaTip, CHINTA_TIPS: CHINTA_TIPS,
+    project: project, monthsToTarget: monthsToTarget,
+    dreams: function () { return load().dreams || (load().dreams = []); },
+    addDream: function (d) { d.id = uid("dm"); (load().dreams = load().dreams || []).unshift(d); save(); return d; },
+    deleteDream: function (id) { var s = load(); s.dreams = (s.dreams || []).filter(function (d) { return d.id !== id; }); save(); },
     setProfile: function (patch) { Object.assign(load().profile, patch); save(); },
     addTrade: function (t) { t.id = uid("t"); load().trades.unshift(t); save(); return t; },
     deleteTrade: function (id) { var s = load(); s.trades = s.trades.filter(function (t) { return t.id !== id; }); save(); }

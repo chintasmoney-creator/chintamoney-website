@@ -22,6 +22,7 @@
     { id: "analytics", label: "Analytics", ic: "📊" },
     { id: "report", label: "My Report", ic: "🧾" },
     { id: "calc", label: "Risk Calculator", ic: "🧮" },
+    { id: "dreams", label: "Dream Planner", ic: "💭" },
     { sep: true, group: "Understand yourself" },
     { id: "insights", label: "Mistake Insights", ic: "🔍" },
     { id: "strategy", label: "Setup Performance", ic: "▦" },
@@ -548,6 +549,77 @@
     if (limit !== Infinity) v.appendChild(el('<div class="notice" style="margin-top:12px">Free plan analyses your data — full unlimited history &amp; export is in <b>Plus</b>.</div>'));
     return v;
   };
+
+  // ---- DREAMS / WEALTH PLANNER (the aspiration engine) ---------------------
+  var DREAM_PRESETS = [["🏡", "Dream home", 10000000], ["🏎️", "Dream car", 2500000], ["🏝️", "Yearly vacations", 500000], ["🎓", "Kids' education", 5000000], ["🔥", "Financial freedom", 50000000]];
+  VIEWS.dreams = function () {
+    var v = el('<div></div>');
+    v.appendChild(topbar("Dream Planner", "Turn discipline into a lifestyle. See what consistent, sized-right money can become."));
+    var c = el('<div class="card"></div>');
+    var chips = el('<div class="chart-toolbar"></div>');
+    DREAM_PRESETS.forEach(function (d) {
+      var b = el('<button class="chart-toggle">' + d[0] + ' ' + d[1] + '</button>');
+      b.addEventListener("click", function () { c.querySelector("#dName").value = d[1]; c.querySelector("#dEmoji").value = d[0]; c.querySelector("#dTarget").value = d[2]; run(); });
+      chips.appendChild(b);
+    });
+    c.appendChild(chips);
+    var form = el('<div class="grid g3"></div>');
+    form.innerHTML =
+      '<label class="fld"><span>Dream</span><input id="dName" value="Dream home"/></label>' +
+      '<label class="fld"><span>Emoji</span><input id="dEmoji" value="🏡"/></label>' +
+      '<label class="fld"><span>Target (₹)</span><input id="dTarget" type="number" value="10000000"/></label>' +
+      '<label class="fld"><span>Starting capital (₹)</span><input id="dStart" type="number" value="200000"/></label>' +
+      '<label class="fld"><span>Invest / month (₹)</span><input id="dMonthly" type="number" value="25000"/></label>' +
+      '<label class="fld"><span>Expected return (% / yr)</span><input id="dRate" type="number" value="14" step="0.5"/></label>' +
+      '<label class="fld"><span>Years</span><input id="dYears" type="number" value="12" min="1"/></label>';
+    c.appendChild(form);
+    var out = el('<div id="dOut" style="margin-top:6px"></div>');
+    c.appendChild(out);
+    function n(id) { var x = parseFloat(c.querySelector(id).value); return isNaN(x) ? 0 : x; }
+    function run() {
+      var name = c.querySelector("#dName").value, emoji = c.querySelector("#dEmoji").value,
+          target = n("#dTarget"), start = n("#dStart"), monthly = n("#dMonthly"), rate = n("#dRate"), years = Math.max(1, n("#dYears"));
+      var p = CM.project(start, monthly, rate, years);
+      var reachM = CM.monthsToTarget(start, monthly, rate, target);
+      var reached = p.fv >= target;
+      var growth = p.fv - p.invested;
+      out.innerHTML =
+        '<div style="display:flex;align-items:center;gap:14px;margin:8px 0 12px"><div style="font-size:2.4rem">' + esc(emoji) + '</div>' +
+          '<div><div style="font-weight:800;font-size:1.15rem">' + esc(name) + '</div>' +
+          '<div class="hint">In ' + years + ' years you could have <b class="pos mono">' + money(p.fv) + '</b></div></div></div>' +
+        '<div class="grid g3">' +
+          '<div class="card" style="padding:12px"><div class="hint">Projected corpus</div><div class="mono pos" style="font-size:1.2rem;font-weight:800">' + money(p.fv) + '</div></div>' +
+          '<div class="card" style="padding:12px"><div class="hint">You invest</div><div class="mono" style="font-size:1.2rem;font-weight:800">' + money(p.invested) + '</div></div>' +
+          '<div class="card" style="padding:12px"><div class="hint">Growth (compounding)</div><div class="mono pos" style="font-size:1.2rem;font-weight:800">' + money(growth) + '</div></div>' +
+        '</div>' +
+        '<div style="margin-top:12px">' + svgLine(p.series, { id: "dream", color: "#22e08a", h: 170, zeroBase: true }) + '</div>' +
+        '<div class="' + (reached ? "" : "notice") + '" style="margin-top:10px;font-weight:600;color:' + (reached ? "var(--green)" : "") + '">' +
+          (reached ? "🎉 You reach your " + esc(name) + " goal" + (reachM ? " in about " + Math.floor(reachM / 12) + "y " + (reachM % 12) + "m." : ".") : "At this pace you fall short of " + money(target) + ". Increase monthly investing or time.") + '</div>';
+      var save = el('<button class="btn btn-primary" style="margin-top:12px">💾 Save this dream</button>');
+      save.addEventListener("click", function () { CM.addDream({ name: name, emoji: emoji, target: target, start: start, monthly: monthly, rate: rate, years: years }); go("dreams"); render(); });
+      out.appendChild(save);
+      out.appendChild(el('<p class="hint" style="margin-top:10px"><span class="mock-tag">ILLUSTRATIVE</span> A projection using your assumed return — not a guarantee. Markets go up and down. Discipline + time is the real edge.</p>'));
+    }
+    v.appendChild(c);
+
+    // saved dreams
+    var saved = CM.dreams();
+    if (saved.length) {
+      var sc = el('<div class="card" style="margin-top:16px"><div class="card-hd"><h3>Your dreams</h3></div></div>');
+      saved.forEach(function (d) {
+        var p = CM.project(d.start, d.monthly, d.rate, d.years);
+        var pct = Math.min(100, Math.round(p.fv / d.target * 100));
+        var row = el('<div style="margin:12px 0"><div style="display:flex;justify-content:space-between;align-items:center"><div><b>' + esc(d.emoji) + ' ' + esc(d.name) + '</b> <span class="hint">· ₹' + (d.monthly).toLocaleString("en-IN") + '/mo · ' + d.years + 'y</span></div><span class="mono ' + (pct >= 100 ? "pos" : "") + '">' + pct + '% of ' + fmtShortMoney(d.target) + '</span></div><div class="bar" style="margin-top:6px"><i style="width:' + pct + '%"></i></div></div>');
+        var del = el('<button class="btn btn-sm btn-ghost" style="margin-top:2px">remove</button>'); del.addEventListener("click", function () { CM.deleteDream(d.id); render(); });
+        row.appendChild(del); sc.appendChild(row);
+      });
+      sc.appendChild(el('<p class="hint" style="margin-top:8px"><b>Plus</b> sends you a monthly dream-progress report so you stay on track.</p>'));
+      v.appendChild(sc);
+    }
+    run();
+    return v;
+  };
+  function fmtShortMoney(n) { var a = Math.abs(n); return a >= 1e7 ? "₹" + (n / 1e7).toFixed(1) + "Cr" : a >= 1e5 ? "₹" + (n / 1e5).toFixed(1) + "L" : money(n); }
 
   // ---- Modal dialog --------------------------------------------------------
   function dialog(title, bodyHtml, onMount) {
