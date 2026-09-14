@@ -17,6 +17,7 @@
     { id: "home", label: "My Report Card", ic: "◎" },
     { id: "log", label: "Log a Trade", ic: "＋" },
     { id: "trades", label: "Trade Journal", ic: "▤" },
+    { id: "markets", label: "Charts", ic: "📈" },
     { id: "analytics", label: "Analytics", ic: "📊" },
     { id: "calc", label: "Risk Calculator", ic: "🧮" },
     { sep: true, group: "Understand yourself" },
@@ -109,7 +110,7 @@
     var col = opt.color || "#0f9d76", zeroY = (min < 0 && max > 0) ? y(0) : null;
     return '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" height="' + h + '" preserveAspectRatio="none">' +
       '<defs><linearGradient id="g' + (opt.id || "") + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + col + '" stop-opacity=".28"/><stop offset="1" stop-color="' + col + '" stop-opacity="0"/></linearGradient></defs>' +
-      (zeroY !== null ? '<line x1="' + pad + '" y1="' + zeroY.toFixed(1) + '" x2="' + (w - pad) + '" y2="' + zeroY.toFixed(1) + '" stroke="#e6e9f0" stroke-dasharray="4 4"/>' : '') +
+      (zeroY !== null ? '<line x1="' + pad + '" y1="' + zeroY.toFixed(1) + '" x2="' + (w - pad) + '" y2="' + zeroY.toFixed(1) + '" stroke="#2a2140" stroke-dasharray="4 4"/>' : '') +
       '<path d="' + area + '" fill="url(#g' + (opt.id || "") + ')"/>' +
       '<path d="' + d + '" fill="none" stroke="' + col + '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>' +
       '<circle cx="' + x(n - 1).toFixed(1) + '" cy="' + y(vals[n - 1]).toFixed(1) + '" r="3.5" fill="' + col + '"/></svg>';
@@ -122,8 +123,8 @@
       off += frac; return seg;
     }).join("");
     return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '">' +
-      '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="#eef1f6" stroke-width="16"/>' + circles +
-      '<text x="' + cx + '" y="' + (cy - 2) + '" text-anchor="middle" font-size="' + (size * 0.2) + '" font-weight="800" fill="#0f172a">' + (opt.center || "") + '</text>' +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="#241c3a" stroke-width="16"/>' + circles +
+      '<text x="' + cx + '" y="' + (cy - 2) + '" text-anchor="middle" font-size="' + (size * 0.2) + '" font-weight="800" fill="#ece9f6">' + (opt.center || "") + '</text>' +
       (opt.sub ? '<text x="' + cx + '" y="' + (cy + size * 0.13) + '" text-anchor="middle" font-size="' + (size * 0.075) + '" fill="#7b879d">' + opt.sub + '</text>' : '') + '</svg>';
   }
   function svgHBars(items) {
@@ -135,7 +136,107 @@
         '<div class="bar' + (pos ? "" : " coral") + '" style="margin-top:4px"><i style="width:' + w + '%"></i></div></div>';
     }).join("");
   }
-  function scoreColorHex(n) { return n >= 75 ? "#0f9d76" : n >= 50 ? "#f5b849" : "#ef4444"; }
+  function scoreColorHex(n) { return n >= 75 ? "#22e08a" : n >= 50 ? "#f5b849" : "#ff5a6a"; }
+
+  // ---- Candlestick + volume + MA chart (illustrative demo data) -------------
+  function seedRand(seed) { var a = seed >>> 0; return function () { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function genCandles(n, seed, base) {
+    var r = seedRand(seed), price = base || 100, out = [], trend = (r() - 0.4) * 0.6;
+    for (var i = 0; i < n; i++) {
+      if (i % 14 === 0) trend = (r() - 0.45) * 1.2;
+      var o = price, ch = trend + (r() - 0.5) * base * 0.02;
+      var c = Math.max(1, o + ch);
+      var hi = Math.max(o, c) + r() * base * 0.012, lo = Math.min(o, c) - r() * base * 0.012;
+      var v = 40 + r() * 100 + (Math.abs(ch) / base) * 800;
+      out.push({ o: o, h: hi, l: lo, c: c, v: v, up: c >= o });
+      price = c;
+    }
+    return out;
+  }
+  function sma(data, win) {
+    return data.map(function (d, i) { if (i < win - 1) return null; var s = 0; for (var k = i - win + 1; k <= i; k++) s += data[k].c; return s / win; });
+  }
+  function fmtP(n) { return n.toFixed(n < 100 ? 2 : n < 1000 ? 1 : 0); }
+  function svgCandleChart(data, opt) {
+    opt = opt || {};
+    var W = 940, H = 440, padL = 48, padR = 12, padT = 12;
+    var pH = 300, vGap = 20, vH = 84, pB = padT + pH, vT = pB + vGap, vB = vT + vH;
+    var n = data.length, cw = (W - padL - padR) / n, bw = Math.max(2, cw * 0.62);
+    var his = data.map(function (d) { return d.h; }), los = data.map(function (d) { return d.l; });
+    var pmax = Math.max.apply(null, his), pmin = Math.min.apply(null, los);
+    var pad = (pmax - pmin) * 0.06; pmax += pad; pmin -= pad;
+    var vmax = Math.max.apply(null, data.map(function (d) { return d.v; })) || 1;
+    function px(i) { return padL + i * cw + cw / 2; }
+    function py(v) { return padT + (pmax - v) / (pmax - pmin) * pH; }
+    function vy(v) { return vB - (v / vmax) * vH; }
+    var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" style="display:block">';
+    // grid + price axis
+    for (var g = 0; g <= 4; g++) {
+      var yy = padT + g / 4 * pH, val = pmax - g / 4 * (pmax - pmin);
+      s += '<line x1="' + padL + '" y1="' + yy.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + yy.toFixed(1) + '" stroke="#241c3a"/>';
+      s += '<text x="' + (padL - 6) + '" y="' + (yy + 3).toFixed(1) + '" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="10" fill="#8a83a6">' + fmtP(val) + '</text>';
+    }
+    // volume bars
+    if (opt.volume !== false) data.forEach(function (d, i) { s += '<rect x="' + (px(i) - bw / 2).toFixed(1) + '" y="' + vy(d.v).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (vB - vy(d.v)).toFixed(1) + '" fill="' + (d.up ? "rgba(34,224,138,.35)" : "rgba(255,90,106,.35)") + '"/>'; });
+    // candles
+    data.forEach(function (d, i) {
+      var col = d.up ? "#22e08a" : "#ff5a6a", x = px(i);
+      s += '<line x1="' + x.toFixed(1) + '" y1="' + py(d.h).toFixed(1) + '" x2="' + x.toFixed(1) + '" y2="' + py(d.l).toFixed(1) + '" stroke="' + col + '" stroke-width="1.3"/>';
+      var yo = py(d.o), yc = py(d.c), top = Math.min(yo, yc), hgt = Math.max(1.5, Math.abs(yc - yo));
+      s += '<rect x="' + (x - bw / 2).toFixed(1) + '" y="' + top.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + hgt.toFixed(1) + '" rx="1" fill="' + col + '"/>';
+    });
+    // moving averages
+    function maPath(arr, color) {
+      var dd = "", started = false;
+      arr.forEach(function (v, i) { if (v == null) return; dd += (started ? "L" : "M") + px(i).toFixed(1) + " " + py(v).toFixed(1) + " "; started = true; });
+      return '<path d="' + dd + '" fill="none" stroke="' + color + '" stroke-width="1.8" opacity=".95"/>';
+    }
+    if (opt.ma !== false) { s += maPath(sma(data, 9), "#a78bfa"); s += maPath(sma(data, 21), "#f5b849"); }
+    // trade markers (illustrative)
+    if (opt.markers !== false && n > 30) {
+      var bi = Math.floor(n * 0.28), si = Math.floor(n * 0.72);
+      s += '<g><polygon points="' + px(bi) + ',' + (py(data[bi].l) + 16) + ' ' + (px(bi) - 6) + ',' + (py(data[bi].l) + 26) + ' ' + (px(bi) + 6) + ',' + (py(data[bi].l) + 26) + '" fill="#22e08a"/><text x="' + px(bi) + '" y="' + (py(data[bi].l) + 40) + '" text-anchor="middle" font-size="9" font-weight="700" fill="#22e08a">BUY</text></g>';
+      s += '<g><polygon points="' + px(si) + ',' + (py(data[si].h) - 16) + ' ' + (px(si) - 6) + ',' + (py(data[si].h) - 26) + ' ' + (px(si) + 6) + ',' + (py(data[si].h) - 26) + '" fill="#ff5a6a"/><text x="' + px(si) + '" y="' + (py(data[si].h) - 30) + '" text-anchor="middle" font-size="9" font-weight="700" fill="#ff5a6a">SELL</text></g>';
+    }
+    s += '<text x="' + padL + '" y="' + (vT - 6) + '" font-size="10" fill="#8a83a6">Volume</text>';
+    s += '</svg>';
+    return s;
+  }
+
+  var mkState = { sym: "NIFTY", ma: true, volume: true, markers: true };
+  var SYMBOLS = [["NIFTY", 24800, 11], ["BANKNIFTY", 51200, 23], ["RELIANCE", 2980, 7], ["TCS", 3910, 31], ["TATAMOTORS", 985, 5], ["ZOMATO", 168, 13]];
+  VIEWS.markets = function () {
+    var v = el('<div></div>');
+    v.appendChild(topbar("Charts", "Read the tape — candles, volume &amp; moving averages. (Demo data.)"));
+    var card = el('<div class="card"></div>');
+    // symbol chips
+    var symRow = el('<div class="chart-toolbar"></div>');
+    SYMBOLS.forEach(function (S) {
+      var b = el('<button class="chart-toggle' + (mkState.sym === S[0] ? " on" : "") + '">' + S[0] + '</button>');
+      b.addEventListener("click", function () { mkState.sym = S[0]; go("markets"); render(); });
+      symRow.appendChild(b);
+    });
+    card.appendChild(symRow);
+    // indicator toggles
+    var tog = el('<div class="chart-toolbar"></div>');
+    [["ma", "MA (9/21)"], ["volume", "Volume"], ["markers", "Trades"]].forEach(function (t) {
+      var b = el('<button class="chart-toggle' + (mkState[t[0]] ? " on" : "") + '">' + t[1] + '</button>');
+      b.addEventListener("click", function () { mkState[t[0]] = !mkState[t[0]]; go("markets"); render(); });
+      tog.appendChild(b);
+    });
+    card.appendChild(tog);
+    // data + header stats
+    var S = SYMBOLS.filter(function (x) { return x[0] === mkState.sym; })[0];
+    var data = genCandles(60, S[2], S[1]);
+    var last = data[n_(data)], first = data[0], chg = (last.c - first.o), chgP = chg / first.o * 100;
+    card.appendChild(el('<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:baseline;margin:4px 0 10px"><b style="font-size:1.3rem">' + mkState.sym + '</b><span class="mono" style="font-size:1.2rem">' + fmtP(last.c) + '</span><span class="mono ' + (chg >= 0 ? "pos" : "neg") + '">' + (chg >= 0 ? "▲ +" : "▼ ") + fmtP(chg) + ' (' + chgP.toFixed(2) + '%)</span></div>'));
+    card.appendChild(el(svgCandleChart(data, mkState)));
+    card.appendChild(el('<div class="legend"><span><i style="background:#22e08a"></i>Bull candle</span><span><i style="background:#ff5a6a"></i>Bear candle</span><span><i style="background:#a78bfa"></i>MA 9</span><span><i style="background:#f5b849"></i>MA 21</span></div>'));
+    card.appendChild(el('<p class="hint" style="margin-top:10px"><span class="mock-tag">DEMO</span> Illustrative chart with sample data. Live market data connects via the data adapter in a later phase — no fake “live” feed is claimed.</p>'));
+    v.appendChild(card);
+    return v;
+  };
+  function n_(a) { return a.length - 1; }
 
   // ---- HOME / Report Card --------------------------------------------------
   VIEWS.home = function () {
@@ -152,6 +253,15 @@
     right.appendChild(el('<p style="margin:6px 0 0"><b>' + st.count + '</b> trades analysed · net <span class="' + (st.totalPnl >= 0 ? "pos" : "neg") + '">' + money(st.totalPnl) + '</span> <span class="mock-tag">from your logs</span></p>'));
     hero.appendChild(right);
     v.appendChild(hero);
+
+    // candlestick chart card
+    var chc = el('<div class="card" style="margin-top:16px"></div>');
+    chc.appendChild(el('<div class="card-hd"><h3>📈 NIFTY · chart</h3><span class="mock-tag">DEMO</span></div>'));
+    chc.appendChild(el(svgCandleChart(genCandles(56, 11, 24800), { ma: true, volume: true, markers: true })));
+    var chb = el('<button class="btn btn-ghost btn-sm" style="margin-top:8px">Open Charts →</button>');
+    chb.addEventListener("click", function () { go("markets"); });
+    chc.appendChild(chb);
+    v.appendChild(chc);
 
     var g = el('<div class="grid g4" style="margin-top:16px"></div>');
     g.appendChild(tile("Win rate", st.winRate + "%", "of " + st.count + " trades"));
@@ -303,9 +413,9 @@
 
   // ---- Modal dialog --------------------------------------------------------
   function dialog(title, bodyHtml, onMount) {
-    var back = el('<div style="position:fixed;inset:0;background:rgba(11,21,51,.55);z-index:120;display:grid;place-items:center;padding:18px"></div>');
-    var box = el('<div style="background:#fff;border-radius:18px;max-width:620px;width:100%;max-height:88vh;overflow:auto;box-shadow:var(--shadow-lg)"></div>');
-    var hd = el('<div style="display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff"><h3 style="margin:0;flex:1">' + title + '</h3></div>');
+    var back = el('<div style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:120;display:grid;place-items:center;padding:18px"></div>');
+    var box = el('<div style="background:var(--surface);border:1px solid var(--line-2);border-radius:18px;max-width:620px;width:100%;max-height:88vh;overflow:auto;box-shadow:var(--shadow-lg)"></div>');
+    var hd = el('<div style="display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surface)"><h3 style="margin:0;flex:1">' + title + '</h3></div>');
     var x = el('<button class="btn btn-sm">✕</button>'); x.addEventListener("click", close); hd.appendChild(x);
     var body = el('<div style="padding:20px"></div>'); body.innerHTML = bodyHtml;
     box.appendChild(hd); box.appendChild(body); back.appendChild(box); document.body.appendChild(back);
