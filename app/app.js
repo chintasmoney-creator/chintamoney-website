@@ -14,11 +14,13 @@
   function ago(iso) { var d = Math.round((Date.now() - new Date(iso)) / 86400000); return d <= 0 ? "today" : d === 1 ? "1d ago" : d + "d ago"; }
 
   var NAV = [
+    { id: "today", label: "Today", ic: "⚡" },
     { id: "home", label: "My Report Card", ic: "◎" },
     { id: "log", label: "Log a Trade", ic: "＋" },
     { id: "trades", label: "Trade Journal", ic: "▤" },
     { id: "markets", label: "Charts", ic: "📈" },
     { id: "analytics", label: "Analytics", ic: "📊" },
+    { id: "report", label: "My Report", ic: "🧾" },
     { id: "calc", label: "Risk Calculator", ic: "🧮" },
     { sep: true, group: "Understand yourself" },
     { id: "insights", label: "Mistake Insights", ic: "🔍" },
@@ -33,7 +35,7 @@
   ];
 
   var mobileOpen = false;
-  function route() { return location.hash.replace(/^#\/?/, "") || "home"; }
+  function route() { return location.hash.replace(/^#\/?/, "") || "today"; }
   function go(r) { location.hash = "#/" + r; }
   window.addEventListener("hashchange", render);
 
@@ -238,12 +240,138 @@
   };
   function n_(a) { return a.length - 1; }
 
+  // ---- Chintamani mascot (wise old risk-manager) ---------------------------
+  function mascot(size) {
+    size = size || 96;
+    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 120 120" aria-hidden="true">' +
+      '<defs><radialGradient id="halo" cx="50%" cy="45%" r="55%"><stop offset="0" stop-color="#a78bfa" stop-opacity=".5"/><stop offset="1" stop-color="#a78bfa" stop-opacity="0"/></radialGradient></defs>' +
+      '<circle cx="60" cy="58" r="54" fill="url(#halo)"/>' +
+      '<path d="M28 74 q32 34 64 0 q4 26 -32 30 q-36 -4 -32 -30Z" fill="#f0a13a"/>' + // robe
+      '<circle cx="60" cy="54" r="30" fill="#f7d9b7"/>' + // face
+      '<path d="M31 48 q3 -22 29 -22 q26 0 29 22 q-6 -6 -12 -5 q-8 -6 -17 -6 q-9 0 -17 6 q-6 -1 -12 5Z" fill="#e7ecf3"/>' + // hair top
+      '<path d="M36 58 q6 40 24 40 q18 0 24 -40 q-8 10 -24 10 q-16 0 -24 -10Z" fill="#eef2f7"/>' + // beard
+      '<circle cx="49" cy="52" r="7.5" fill="none" stroke="#2a2140" stroke-width="2.4"/>' + // glasses L
+      '<circle cx="71" cy="52" r="7.5" fill="none" stroke="#2a2140" stroke-width="2.4"/>' + // glasses R
+      '<line x1="56.5" y1="52" x2="63.5" y2="52" stroke="#2a2140" stroke-width="2.4"/>' +
+      '<circle cx="49" cy="52" r="2.2" fill="#2a2140"/><circle cx="71" cy="52" r="2.2" fill="#2a2140"/>' +
+      '<path d="M52 64 q8 6 16 0" fill="none" stroke="#b07a4a" stroke-width="2.2" stroke-linecap="round"/>' + // smile
+      '<circle cx="60" cy="40" r="3" fill="#f5b849"/>' + // tilak/dot
+      '</svg>';
+  }
+  function chintaCard(tip) {
+    var c = el('<div class="card" style="display:flex;gap:14px;align-items:center;border-color:var(--line-2);background:linear-gradient(120deg,rgba(139,92,246,.14),var(--bg-2))"></div>');
+    c.appendChild(el('<div style="flex:none">' + mascot(72) + '</div>'));
+    c.appendChild(el('<div><div style="font-weight:800">Chintamani says</div><div class="hint" style="color:var(--ink-soft);font-size:.95rem;margin-top:2px">“' + esc(tip || CM.chintaTip()) + '”</div></div>'));
+    return c;
+  }
+
+  // ---- Engagement bar (level · XP · streak · daily goal) -------------------
+  function engagementBar() {
+    var e = CM.engagement();
+    var w = el('<div class="card" style="margin-bottom:16px;display:flex;gap:18px;align-items:center;flex-wrap:wrap;border-color:var(--line-2)"></div>');
+    w.appendChild(el('<div style="display:flex;align-items:center;gap:10px"><div style="font-size:1.8rem">' + e.em + '</div><div><div style="font-weight:800">Lv ' + e.level + ' · ' + esc(e.title) + '</div><div class="hint mono">' + e.xp + ' XP</div></div></div>'));
+    var prog = el('<div style="flex:1;min-width:180px"><div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted)"><span>Level ' + e.level + '</span><span>' + e.xpToNext + ' XP to Lv ' + (e.level + 1) + '</span></div><div class="bar" style="margin-top:5px"><i style="width:' + e.pct + '%"></i></div></div>');
+    w.appendChild(prog);
+    w.appendChild(el('<div style="text-align:center"><div style="font-size:1.4rem">🔥 ' + e.streak + '</div><div class="hint">day streak</div></div>'));
+    var goal = el('<div style="text-align:center"><div style="font-size:1.4rem">' + (e.loggedToday ? "✅" : "🎯") + '</div><div class="hint">' + (e.loggedToday ? "logged today" : "log a trade today") + '</div></div>');
+    w.appendChild(goal);
+    return w;
+  }
+
+  // ---- TODAY feed (the addictive scroll) -----------------------------------
+  VIEWS.today = function () {
+    var s = CM.load(), st = CM.stats(), e = CM.engagement(), ms = CM.mistakes(), v = el('<div></div>');
+    v.appendChild(topbar("Today", "Your daily money mirror — a fresh look every time you open.", [logBtn()]));
+    v.appendChild(engagementBar());
+    var feed = el('<div class="grid" style="max-width:680px;margin:0 auto"></div>');
+    // 1. Chintamani tip
+    feed.appendChild(chintaCard());
+    // 2. discipline snapshot
+    var dcard = el('<div class="card"></div>');
+    dcard.appendChild(el('<div class="card-hd"><h3>Your discipline right now</h3><span class="badge ' + (st.discipline >= 75 ? "b-green" : st.discipline >= 50 ? "b-yellow" : "b-red") + '">' + scoreLabel(st.discipline) + '</span></div>'));
+    dcard.appendChild(el('<div style="display:flex;align-items:center;gap:16px"><div>' + gauge(st.discipline, 120) + '</div><div><div class="persona" style="font-size:1.15rem;font-weight:800">' + st.personality.em + ' ' + esc(st.personality.key) + '</div><div class="hint">' + esc(st.personality.line) + '</div></div></div>'));
+    feed.appendChild(dcard);
+    // 3. biggest leak to fix
+    if (ms.length) {
+      var lc = el('<div class="card" style="border-color:rgba(255,90,106,.35)"></div>');
+      lc.appendChild(el('<div class="card-hd"><h3>🩸 Fix this first</h3><span class="badge b-red">×' + ms[0].n + '</span></div>'));
+      lc.appendChild(el('<div style="font-weight:700">' + esc(ms[0].name) + '</div><div class="hint" style="margin-top:2px">' + esc(ms[0].tip) + '</div>'));
+      feed.appendChild(lc);
+    }
+    // 4. next badge to chase
+    if (e.nextBadge) {
+      var bc = el('<div class="card" style="display:flex;gap:14px;align-items:center"></div>');
+      bc.appendChild(el('<div style="font-size:2.2rem;flex:none;opacity:.6">' + e.nextBadge.em + '</div>'));
+      bc.appendChild(el('<div><div style="font-weight:800">Next badge: ' + esc(e.nextBadge.name) + '</div><div class="hint">' + esc(e.nextBadge.desc) + '</div></div>'));
+      feed.appendChild(bc);
+    }
+    // 5. mini chart nudge
+    var mc = el('<div class="card"></div>');
+    mc.appendChild(el('<div class="card-hd"><h3>📈 Market pulse</h3><span class="mock-tag">DEMO</span></div>'));
+    mc.appendChild(el(svgCandleChart(genCandles(40, 11, 24800), { ma: true, volume: false, markers: false })));
+    feed.appendChild(mc);
+    // 6. equity nudge
+    var eq = CM.equityCurve();
+    if (eq.length) {
+      var ec = el('<div class="card"></div>');
+      ec.appendChild(el('<div class="card-hd"><h3>Your equity curve</h3><span class="hint mono ' + (st.totalPnl >= 0 ? "pos" : "neg") + '">' + money(st.totalPnl) + '</span></div>'));
+      ec.appendChild(el(svgLine(eq.map(function (p) { return p.cum; }), { id: "today", color: st.totalPnl >= 0 ? "#22e08a" : "#ff5a6a", h: 130 })));
+      feed.appendChild(ec);
+    }
+    // 7. CTA
+    var cta = el('<div class="card" style="text-align:center;background:linear-gradient(120deg,rgba(34,224,138,.12),rgba(139,92,246,.12))"></div>');
+    cta.appendChild(el('<div style="font-weight:800;font-size:1.05rem">Keep the streak alive 🔥</div><p class="hint" style="margin:6px 0 12px">Log today\'s trades to earn XP and keep your report card honest.</p>'));
+    var cb = el('<button class="btn btn-primary">＋ Log a trade</button>'); cb.addEventListener("click", function () { go("log"); }); cta.appendChild(cb);
+    feed.appendChild(cta);
+    v.appendChild(feed);
+    return v;
+  };
+
+  // ---- REPORT (downloadable / printable) -----------------------------------
+  VIEWS.report = function () {
+    var st = CM.stats(), wl = CM.winLoss(), ms = CM.mistakes(), e = CM.engagement(), v = el('<div></div>');
+    var dl = el('<button class="btn btn-sm">⬇ Download sheet (CSV)</button>'); dl.addEventListener("click", downloadReportCSV);
+    var pr = el('<button class="btn btn-sm">🖨 Save as PDF</button>'); pr.addEventListener("click", function () { window.print(); });
+    v.appendChild(topbar("My Report", "A clean summary you can download, print or share.", [dl, pr]));
+    var c = el('<div class="card"></div>');
+    c.appendChild(el('<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><div style="display:flex;align-items:center;gap:10px">' + mascot(56) + '<div><div style="font-weight:800;font-size:1.15rem">' + esc(CM.load().profile.name || "Trader") + '\'s Report Card</div><div class="hint">' + new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) + ' · Lv ' + e.level + ' ' + esc(e.title) + '</div></div></div><div style="text-align:right">' + gauge(st.discipline, 96) + '</div></div>'));
+    var g = el('<div class="grid g4" style="margin-top:12px"></div>');
+    g.appendChild(tile("Trades", String(st.count), "analysed"));
+    g.appendChild(tile("Win rate", st.winRate + "%", wl.wins + "W · " + wl.losses + "L"));
+    g.appendChild(tile("Net P&L", money(st.totalPnl), "from your logs", st.totalPnl >= 0));
+    g.appendChild(tile("Discipline", st.discipline + "/100", scoreLabel(st.discipline), st.discipline >= 75));
+    c.appendChild(g);
+    c.appendChild(el('<h3 style="margin:16px 0 6px">Top mistakes to fix</h3>'));
+    var ul = el('<ol style="margin:0;padding-left:18px;color:var(--ink-soft)"></ol>');
+    (ms.length ? ms : [{ name: "No repeating mistakes — clean sheet.", n: 0 }]).slice(0, 5).forEach(function (m) { ul.appendChild(el('<li style="margin:3px 0">' + esc(m.name) + (m.n ? ' <b>×' + m.n + '</b>' : '') + '</li>')); });
+    c.appendChild(ul);
+    c.appendChild(el('<p class="hint" style="margin-top:14px"><span class="mock-tag">CHINTAMANI</span> ' + esc(CM.chintaTip()) + '</p>'));
+    v.appendChild(c);
+    return v;
+  };
+  function downloadReportCSV() {
+    var st = CM.stats(), wl = CM.winLoss(), ms = CM.mistakes(), e = CM.engagement();
+    var rows = [["Metric", "Value"],
+      ["Name", CM.load().profile.name || "Trader"], ["Date", new Date().toISOString().slice(0, 10)],
+      ["Level", e.level + " " + e.title], ["Discipline score", st.discipline + "/100 (" + scoreLabel(st.discipline) + ")"],
+      ["Trades", st.count], ["Win rate", st.winRate + "%"], ["Wins", wl.wins], ["Losses", wl.losses],
+      ["Net P&L", Math.round(st.totalPnl)], ["Avg win", Math.round(st.avgWin)], ["Avg loss", Math.round(st.avgLoss)],
+      ["Risk:Reward", st.rr ? st.rr.toFixed(2) : "-"], ["No-SL trades", st.noSL], ["Emotional exits", st.emotional],
+      ["Personality", st.personality.key], ["Streak (days)", e.streak]];
+    ms.forEach(function (m, i) { rows.push(["Mistake " + (i + 1), m.name + " x" + m.n]); });
+    var csv = rows.map(function (r) { return r.map(function (x) { var s = String(x); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(","); }).join("\n");
+    var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    a.download = "chintasmoney-report.csv"; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+
   // ---- HOME / Report Card --------------------------------------------------
   VIEWS.home = function () {
     var s = CM.load(), st = CM.stats(), p = st.personality;
     var v = el('<div></div>');
     v.appendChild(topbar("Your Trader Report Card", "Hi " + (s.profile.name || "trader") + " — this is your honest mirror, not tips.", [logBtn()]));
 
+    v.appendChild(engagementBar());
     var hero = el('<div class="card" style="display:flex;gap:24px;align-items:center;flex-wrap:wrap"></div>');
     hero.appendChild(el('<div>' + gauge(st.discipline) + '</div>'));
     var right = el('<div style="flex:1;min-width:240px"></div>');
@@ -337,6 +465,16 @@
     spCard.appendChild(el('<div>' + svgHBars(CM.setupPerformance().map(function (s) { return { label: s.setup + " (" + s.winRate + "% · " + s.n + ")", value: s.pnl, fmt: money(s.pnl) }; })) + '</div>'));
     row2.appendChild(spCard);
     v.appendChild(row2);
+
+    // setup distribution pie
+    var PIE = ["#8b5cf6", "#22e08a", "#f5b849", "#19d3c5", "#ff5a6a", "#a78bfa", "#4fe3a3", "#fb7185"];
+    var sp = CM.setupPerformance();
+    var pieCard = el('<div class="card" style="margin-top:16px"><div class="card-hd"><h3>Setup distribution</h3></div><div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap"></div></div>');
+    pieCard.lastChild.appendChild(el(svgDonut(sp.map(function (r, i) { return { value: r.n, color: PIE[i % PIE.length] }; }), { size: 160, center: st.count, sub: "trades" })));
+    var leg = el('<div style="display:grid;gap:6px"></div>');
+    sp.forEach(function (r, i) { leg.appendChild(el('<div style="display:flex;align-items:center;gap:8px;font-size:.88rem"><span style="width:12px;height:12px;border-radius:3px;background:' + PIE[i % PIE.length] + '"></span>' + esc(r.setup) + ' <span class="muted">· ' + r.n + '</span></div>')); });
+    pieCard.lastChild.appendChild(leg);
+    v.appendChild(pieCard);
 
     var emo = CM.emotionBreakdown();
     var eCard = el('<div class="card" style="margin-top:16px"><div class="card-hd"><h3>What you feel when you trade</h3></div></div>');
@@ -685,6 +823,7 @@
     var wrap = el('<div class="onb"></div>'), c = el('<div class="onb-card"></div>');
     c.appendChild(el('<div class="brand" style="padding:0 0 6px"><span class="brand-badge brand-logo-chip"><img src="assets/logo.png" alt="ChintasMoney"/></span><div><b style="color:var(--ink)">ChintasMoney</b><small style="color:var(--muted)">TRADER REPORT CARD</small></div></div>'));
     if (onb.step === 0) {
+      c.appendChild(el('<div style="text-align:center;margin:6px 0 -4px">' + mascot(96) + '<div style="font-weight:800;color:var(--ink)">Namaste, I\'m Chintamani 🙏</div><div class="hint">Your old, calm risk-manager.</div></div>'));
       c.appendChild(el('<h2 style="margin:12px 0 4px">Ready for the honest truth? 👀</h2>'));
       c.appendChild(el('<p class="hint">Most traders track P&L. You\'re about to track the thing that actually decides it — your discipline. What should we call you?</p>'));
       var nm = el('<label class="fld"><span>Your name</span><input placeholder="e.g. Basava" /></label>'); nm.querySelector("input").value = onb.name;
@@ -698,7 +837,7 @@
       c.appendChild(hd);
       c.appendChild(el('<div class="notice">We\'ve loaded sample trades so your report card is alive from second one. Reset anytime in Profile.</div>'));
       var d = el('<button class="btn btn-primary" style="margin-top:8px">See my Report Card →</button>');
-      d.addEventListener("click", function () { CM.setProfile({ name: onb.name, handle: hd.querySelector("input").value.trim(), onboarded: true }); go("home"); render(); });
+      d.addEventListener("click", function () { CM.setProfile({ name: onb.name, handle: hd.querySelector("input").value.trim(), onboarded: true }); go("today"); render(); });
       c.appendChild(d);
     }
     var dots = el('<div class="steps-dots"></div>'); [0, 1].forEach(function (i) { dots.appendChild(el('<i class="' + (i <= onb.step ? "on" : "") + '"></i>')); }); c.appendChild(dots);

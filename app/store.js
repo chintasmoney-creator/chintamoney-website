@@ -29,7 +29,7 @@
       limits: { history: Infinity } }
   };
   var FEATURE_MATRIX = {
-    home: "free", log: "free", trades: "free", card: "free", profile: "free", calc: "free", analytics: "free", markets: "free",
+    home: "free", log: "free", trades: "free", card: "free", profile: "free", calc: "free", analytics: "free", markets: "free", today: "free", report: "free",
     insights: "plus", coach: "plus", badges: "plus", leaderboard: "plus",
     strategy: "pro"
   };
@@ -195,6 +195,49 @@
     return Object.keys(by).map(function (k) { return { setup: k, n: by[k].n, pnl: by[k].pnl, winRate: Math.round(by[k].wins / by[k].n * 100) }; }).sort(function (a, b) { return b.pnl - a.pnl; });
   }
 
+  // ---- Engagement: XP, levels, streak (the "keep coming back" layer) --------
+  var LEVELS = [
+    { t: "Street Trader", em: "🥷" }, { t: "Apprentice", em: "📗" }, { t: "Disciplined", em: "🎯" },
+    { t: "Sniper", em: "🏹" }, { t: "Risk Master", em: "🛡️" }, { t: "Chintamani's Student", em: "🧘" },
+    { t: "Market Monk", em: "🧙" }
+  ];
+  function earnedBadges() { return badges().filter(function (b) { return b.got; }).length; }
+  function streakDays() {
+    var days = {}; load().trades.forEach(function (t) { days[t.date.slice(0, 10)] = true; });
+    var d = new Date(); d.setHours(0, 0, 0, 0); var streak = 0;
+    // allow today OR yesterday to start the streak
+    var key = d.toISOString().slice(0, 10);
+    if (!days[key]) { d.setDate(d.getDate() - 1); key = d.toISOString().slice(0, 10); if (!days[key]) return 0; }
+    while (days[d.toISOString().slice(0, 10)]) { streak++; d.setDate(d.getDate() - 1); }
+    return streak;
+  }
+  function loggedToday() { var k = new Date().toISOString().slice(0, 10); return load().trades.some(function (t) { return t.date.slice(0, 10) === k; }); }
+  function engagement() {
+    var st = stats();
+    var xp = st.count * 25 + earnedBadges() * 75 + Math.round(st.discipline || 0) + streakDays() * 20;
+    var per = 350, level = Math.min(LEVELS.length, 1 + Math.floor(xp / per));
+    var inLvl = xp % per, pct = Math.round(inLvl / per * 100);
+    var lv = LEVELS[level - 1];
+    // next badge to chase
+    var next = badges().filter(function (b) { return !b.got; })[0] || null;
+    return { xp: xp, level: level, title: lv.t, em: lv.em, pct: pct, xpToNext: per - inLvl, streak: streakDays(), loggedToday: loggedToday(), nextBadge: next };
+  }
+
+  // ---- Chintamani — the wise old risk-managing mentor -----------------------
+  var CHINTA_TIPS = [
+    "A stop-loss is not a suggestion. Decide your exit before you enter — every single time.",
+    "After a red trade, close the laptop for ten minutes. Revenge is the account-killer.",
+    "Risk 1% and you can be wrong 20 times in a row and survive. Risk 10% and one bad day ends you.",
+    "You don't need more trades. You need better ones. Boredom is not a setup.",
+    "Book your target. Greed turns winners into losers.",
+    "Position size first, prediction second. Size decides survival.",
+    "The market rewards patience, not effort. Sit on your hands.",
+    "Your best edge is not a strategy — it's not breaking your own rules.",
+    "Green days make you brave; bear days make you scared. Your risk should ignore your mood.",
+    "Journal the trade you skipped too. Discipline is also what you don't do."
+  ];
+  function chintaTip(seed) { return CHINTA_TIPS[(seed || Math.floor(Date.now() / 86400000)) % CHINTA_TIPS.length]; }
+
   var adapters = {
     brokerImport: { isLive: false, note: "Import trades from broker/CSV (mock in MVP)." },
     notifications: { isLive: false }
@@ -210,6 +253,7 @@
     pnl: pnl, isWin: isWin, hasSL: hasSL, tradeDiscipline: tradeDiscipline,
     stats: stats, personality: personality, badges: badges, mistakes: mistakes, setupPerformance: setupPerformance,
     equityCurve: equityCurve, disciplineTrend: disciplineTrend, winLoss: winLoss, emotionBreakdown: emotionBreakdown,
+    engagement: engagement, chintaTip: chintaTip, CHINTA_TIPS: CHINTA_TIPS,
     setProfile: function (patch) { Object.assign(load().profile, patch); save(); },
     addTrade: function (t) { t.id = uid("t"); load().trades.unshift(t); save(); return t; },
     deleteTrade: function (id) { var s = load(); s.trades = s.trades.filter(function (t) { return t.id !== id; }); save(); }
