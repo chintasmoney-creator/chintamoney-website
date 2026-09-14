@@ -279,6 +279,16 @@
     return wrap;
   }
   var TV_SYM = { NIFTY: "NSE:NIFTY", BANKNIFTY: "NSE:BANKNIFTY", RELIANCE: "NSE:RELIANCE", TCS: "NSE:TCS", TATAMOTORS: "NSE:TATAMOTORS", ZOMATO: "NSE:ZOMATO" };
+  // Guess the live TradingView symbol from a user's trade symbol string.
+  function tvSymbolFor(s) {
+    s = (s || "").trim().toUpperCase();
+    if (/BANKNIFTY/.test(s)) return "NSE:BANKNIFTY";
+    if (/FINNIFTY/.test(s)) return "NSE:CNXFINANCE";
+    if (/NIFTY/.test(s)) return "NSE:NIFTY";
+    if (/SENSEX/.test(s)) return "BSE:SENSEX";
+    var first = s.split(/\s+/)[0].replace(/[^A-Z0-9&-]/g, "");
+    return first ? "NSE:" + first : "NSE:NIFTY";
+  }
   function tvAdvanced(sym, h) {
     return tvEmbed("https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js", {
       autosize: true, symbol: sym, interval: "D", timezone: "Asia/Kolkata", theme: "dark", style: "1",
@@ -567,6 +577,17 @@
     c.appendChild(save);
     c.appendChild(el('<p class="hint" style="margin-top:10px">Tip: leaving <b>Planned SL</b> empty counts as “traded without a stop” — because that’s the truth we\'re measuring.</p>'));
     v.appendChild(c);
+
+    // live chart of the symbol being logged
+    var chartCard = el('<div class="card" style="margin-top:16px"><div class="card-hd"><h3>📈 Live chart</h3><span class="hint mono" id="chSym"></span></div><div id="chBox"></div><p class="hint" style="margin-top:8px">Analyse the real market for this symbol as you log. Change the symbol above to update it.</p></div>');
+    v.appendChild(chartCard);
+    function mountChart() {
+      var sym = tvSymbolFor(c.querySelector("#sym").value);
+      chartCard.querySelector("#chSym").textContent = sym;
+      var box = chartCard.querySelector("#chBox"); box.innerHTML = ""; box.appendChild(tvAdvanced(sym, 420));
+    }
+    var ct; c.querySelector("#sym").addEventListener("input", function () { clearTimeout(ct); ct = setTimeout(mountChart, 700); });
+    mountChart();
     return v;
   };
 
@@ -595,8 +616,9 @@
         '<td>' + esc(t.emotion) + '</td>' +
         '<td class="num"><b style="color:' + scoreColor(d) + '">' + d + '</b></td>' +
         '<td class="hint">' + ago(t.date) + '</td><td></td></tr>');
-      var del = el('<button class="btn btn-sm">✕</button>'); del.addEventListener("click", function () { CM.deleteTrade(t.id); render(); });
-      tr.lastChild.appendChild(del); tb.appendChild(tr);
+      var an = el('<button class="btn btn-sm" title="Analyse on real chart">📈</button>'); an.addEventListener("click", function () { analyseTrade(t); });
+      var del = el('<button class="btn btn-sm" title="Delete">✕</button>'); del.addEventListener("click", function () { CM.deleteTrade(t.id); render(); });
+      tr.lastChild.appendChild(an); tr.lastChild.appendChild(del); tb.appendChild(tr);
     });
     v.appendChild(c);
     if (limit !== Infinity) v.appendChild(el('<div class="notice" style="margin-top:12px">Free plan analyses your data — full unlimited history &amp; export is in <b>Plus</b>.</div>'));
@@ -795,6 +817,25 @@
       else { if (ch === '"') q = true; else if (ch === ",") { out.push(cur); cur = ""; } else cur += ch; }
     }
     out.push(cur); return out;
+  }
+
+  // ---- Analyse a trade on the real TradingView chart -----------------------
+  function analyseTrade(t) {
+    var sym = tvSymbolFor(t.symbol), p = CM.pnl(t), d = CM.tradeDiscipline(t);
+    var body =
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">' +
+        '<span class="chip">' + esc(t.side) + ' ' + t.qty + '</span>' +
+        '<span class="chip">Entry ' + t.entry + '</span>' +
+        '<span class="chip">Exit ' + t.exit + '</span>' +
+        (CM.hasSL(t) ? '<span class="chip">SL ' + t.plannedSL + '</span>' : '<span class="badge b-red">no SL</span>') +
+        '<span class="chip">' + esc(t.setup) + '</span>' +
+        '<span class="badge ' + (p >= 0 ? "b-green" : "b-red") + '">P&L ' + money(p) + '</span>' +
+        '<span class="badge b-navy">discipline ' + d + '</span>' +
+      '</div>' +
+      '<div style="font-size:.82rem;color:var(--muted);margin-bottom:6px">Live chart for <b style="color:var(--ink)">' + sym + '</b> · exit reason: ' + esc(t.exit_reason) + ' · felt: ' + esc(t.emotion) + '</div>' +
+      '<div id="anBox"></div>' +
+      '<p class="hint" style="margin-top:8px">Compare your entry/exit/stop against what the real market did. Would a disciplined trader have taken this?</p>';
+    dialog(esc(t.symbol) + " · analyse", body, function (b) { b.querySelector("#anBox").appendChild(tvAdvanced(sym, 420)); });
   }
 
   // ---- MISTAKE INSIGHTS ----------------------------------------------------
