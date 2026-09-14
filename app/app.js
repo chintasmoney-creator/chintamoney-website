@@ -17,6 +17,7 @@
     { id: "home", label: "My Report Card", ic: "◎" },
     { id: "log", label: "Log a Trade", ic: "＋" },
     { id: "trades", label: "Trade Journal", ic: "▤" },
+    { id: "analytics", label: "Analytics", ic: "📊" },
     { id: "calc", label: "Risk Calculator", ic: "🧮" },
     { sep: true, group: "Understand yourself" },
     { id: "insights", label: "Mistake Insights", ic: "🔍" },
@@ -95,6 +96,47 @@
 
   var VIEWS = {};
 
+  // ---- SVG chart helpers ---------------------------------------------------
+  function svgLine(vals, opt) {
+    opt = opt || {}; var w = opt.w || 520, h = opt.h || 180, pad = 8;
+    if (!vals.length) return '<div class="hint">No data yet.</div>';
+    var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+    if (opt.zeroBase && min > 0) min = 0; if (min === max) { max = min + 1; }
+    var n = vals.length, dx = (w - pad * 2) / Math.max(1, n - 1);
+    function x(i) { return pad + i * dx; } function y(v) { return h - pad - (v - min) / (max - min) * (h - pad * 2); }
+    var d = vals.map(function (v, i) { return (i ? "L" : "M") + x(i).toFixed(1) + " " + y(v).toFixed(1); }).join(" ");
+    var area = d + " L" + x(n - 1).toFixed(1) + " " + (h - pad) + " L" + x(0).toFixed(1) + " " + (h - pad) + " Z";
+    var col = opt.color || "#0f9d76", zeroY = (min < 0 && max > 0) ? y(0) : null;
+    return '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" height="' + h + '" preserveAspectRatio="none">' +
+      '<defs><linearGradient id="g' + (opt.id || "") + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + col + '" stop-opacity=".28"/><stop offset="1" stop-color="' + col + '" stop-opacity="0"/></linearGradient></defs>' +
+      (zeroY !== null ? '<line x1="' + pad + '" y1="' + zeroY.toFixed(1) + '" x2="' + (w - pad) + '" y2="' + zeroY.toFixed(1) + '" stroke="#e6e9f0" stroke-dasharray="4 4"/>' : '') +
+      '<path d="' + area + '" fill="url(#g' + (opt.id || "") + ')"/>' +
+      '<path d="' + d + '" fill="none" stroke="' + col + '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>' +
+      '<circle cx="' + x(n - 1).toFixed(1) + '" cy="' + y(vals[n - 1]).toFixed(1) + '" r="3.5" fill="' + col + '"/></svg>';
+  }
+  function svgDonut(segs, opt) {
+    opt = opt || {}; var size = opt.size || 150, r = size / 2 - 12, cx = size / 2, cy = size / 2, C = 2 * Math.PI * r;
+    var total = segs.reduce(function (a, s) { return a + s.value; }, 0) || 1, off = 0;
+    var circles = segs.map(function (s) {
+      var frac = s.value / total, seg = '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + s.color + '" stroke-width="16" stroke-dasharray="' + (frac * C).toFixed(1) + ' ' + C.toFixed(1) + '" stroke-dashoffset="' + (-off * C).toFixed(1) + '" transform="rotate(-90 ' + cx + ' ' + cy + ')"/>';
+      off += frac; return seg;
+    }).join("");
+    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '">' +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="#eef1f6" stroke-width="16"/>' + circles +
+      '<text x="' + cx + '" y="' + (cy - 2) + '" text-anchor="middle" font-size="' + (size * 0.2) + '" font-weight="800" fill="#0f172a">' + (opt.center || "") + '</text>' +
+      (opt.sub ? '<text x="' + cx + '" y="' + (cy + size * 0.13) + '" text-anchor="middle" font-size="' + (size * 0.075) + '" fill="#7b879d">' + opt.sub + '</text>' : '') + '</svg>';
+  }
+  function svgHBars(items) {
+    if (!items.length) return '<div class="hint">No data yet.</div>';
+    var max = Math.max.apply(null, items.map(function (i) { return Math.abs(i.value); })) || 1;
+    return items.map(function (i) {
+      var w = Math.round(Math.abs(i.value) / max * 100), pos = i.value >= 0;
+      return '<div style="margin:9px 0"><div style="display:flex;justify-content:space-between;font-size:.85rem"><span>' + esc(i.label) + '</span><span class="' + (pos ? "pos" : "neg") + '" style="font-weight:700">' + (i.fmt || i.value) + '</span></div>' +
+        '<div class="bar' + (pos ? "" : " coral") + '" style="margin-top:4px"><i style="width:' + w + '%"></i></div></div>';
+    }).join("");
+  }
+  function scoreColorHex(n) { return n >= 75 ? "#0f9d76" : n >= 50 ? "#f5b849" : "#ef4444"; }
+
   // ---- HOME / Report Card --------------------------------------------------
   VIEWS.home = function () {
     var s = CM.load(), st = CM.stats(), p = st.personality;
@@ -118,6 +160,18 @@
     g.appendChild(tile("Emotional exits", String(st.emotional), "fear/greed/revenge/FOMO", st.emotional === 0));
     v.appendChild(g);
 
+    // equity curve snapshot
+    var eq = CM.equityCurve();
+    if (eq.length) {
+      var eqc = el('<div class="card" style="margin-top:16px"></div>');
+      eqc.appendChild(el('<div class="card-hd"><h3>Equity curve</h3><span class="hint mono ' + (st.totalPnl >= 0 ? "pos" : "neg") + '">' + money(st.totalPnl) + ' net · ' + st.count + ' trades</span></div>'));
+      eqc.appendChild(el(svgLine(eq.map(function (p) { return p.cum; }), { id: "home", color: st.totalPnl >= 0 ? "#0f9d76" : "#ef4444", h: 150 })));
+      var moreb = el('<button class="btn btn-ghost btn-sm" style="margin-top:8px">Open full analytics →</button>');
+      moreb.addEventListener("click", function () { go("analytics"); });
+      eqc.appendChild(moreb);
+      v.appendChild(eqc);
+    }
+
     var cols = el('<div class="grid g2" style="margin-top:16px;align-items:start"></div>');
     // top mistakes
     var mc = el('<div class="card"><div class="card-hd"><h3>What\'s costing you</h3></div></div>');
@@ -136,6 +190,51 @@
   function tile(l, v, note, good) {
     return el('<div class="card stat"><span class="lbl">' + l + '</span><span class="val">' + v + '</span><span class="hint' + (good === true ? " pos" : good === false ? " neg" : "") + '">' + note + '</span></div>');
   }
+
+  // ---- ANALYTICS -----------------------------------------------------------
+  VIEWS.analytics = function () {
+    var st = CM.stats(), eq = CM.equityCurve(), dt = CM.disciplineTrend(), wl = CM.winLoss();
+    var v = el('<div></div>');
+    v.appendChild(topbar("Analytics", "The charts your broker never shows you — all from your own trades.", [logBtn()]));
+    if (!st.count) { var e = el('<div class="card paywall"><div class="lock-ic">📊</div><h3>No charts yet</h3><p class="hint">Log a few trades and your analytics come alive.</p></div>'); v.appendChild(e); return v; }
+
+    var g = el('<div class="grid g4"></div>');
+    g.appendChild(tile("Net P&L", money(st.totalPnl), "from your logs", st.totalPnl >= 0));
+    g.appendChild(tile("Win rate", st.winRate + "%", wl.wins + "W · " + wl.losses + "L"));
+    g.appendChild(tile("Risk : reward", st.rr ? st.rr.toFixed(2) + "×" : "—", "avg win ÷ loss"));
+    g.appendChild(tile("Discipline", st.discipline + "/100", scoreLabel(st.discipline), st.discipline >= 75));
+    v.appendChild(g);
+
+    var row1 = el('<div class="grid g2" style="margin-top:16px;align-items:start"></div>');
+    var eqCard = el('<div class="card"><div class="card-hd"><h3>Equity curve</h3><span class="hint mono ' + (st.totalPnl >= 0 ? "pos" : "neg") + '">' + money(st.totalPnl) + '</span></div></div>');
+    eqCard.appendChild(el(svgLine(eq.map(function (p) { return p.cum; }), { id: "eq", color: st.totalPnl >= 0 ? "#0f9d76" : "#ef4444", zeroBase: false, h: 190 })));
+    eqCard.appendChild(el('<p class="hint" style="margin:8px 0 0">Cumulative profit &amp; loss across your ' + st.count + ' logged trades.</p>'));
+    row1.appendChild(eqCard);
+
+    var wlCard = el('<div class="card"><div class="card-hd"><h3>Wins vs losses</h3></div><div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"></div></div>');
+    wlCard.lastChild.appendChild(el(svgDonut([{ value: wl.wins, color: "#22c55e" }, { value: wl.losses, color: "#ef4444" }], { center: st.winRate + "%", sub: "win rate" })));
+    wlCard.lastChild.appendChild(el('<div><div class="attn" style="border:0;padding:4px 0"><div class="dot green"></div><div>' + wl.wins + ' winning trades</div></div><div class="attn" style="border:0;padding:4px 0"><div class="dot red"></div><div>' + wl.losses + ' losing trades</div></div></div>'));
+    row1.appendChild(wlCard);
+    v.appendChild(row1);
+
+    var row2 = el('<div class="grid g2" style="margin-top:16px;align-items:start"></div>');
+    var dCard = el('<div class="card"><div class="card-hd"><h3>Discipline trend</h3><span class="hint">per trade</span></div></div>');
+    dCard.appendChild(el(svgLine(dt, { id: "disc", color: scoreColorHex(st.discipline), h: 170, zeroBase: true })));
+    dCard.appendChild(el('<p class="hint" style="margin:8px 0 0">Higher = you followed your plan. Watch the dips — that\'s where money leaks.</p>'));
+    row2.appendChild(dCard);
+
+    var spCard = el('<div class="card"><div class="card-hd"><h3>P&L by setup</h3></div></div>');
+    spCard.appendChild(el('<div>' + svgHBars(CM.setupPerformance().map(function (s) { return { label: s.setup + " (" + s.winRate + "% · " + s.n + ")", value: s.pnl, fmt: money(s.pnl) }; })) + '</div>'));
+    row2.appendChild(spCard);
+    v.appendChild(row2);
+
+    var emo = CM.emotionBreakdown();
+    var eCard = el('<div class="card" style="margin-top:16px"><div class="card-hd"><h3>What you feel when you trade</h3></div></div>');
+    eCard.appendChild(el('<div>' + svgHBars(emo.map(function (x) { var bad = /revenge|fomo|fear|greed|overconf/i.test(x.label); return { label: x.label, value: bad ? -x.n : x.n, fmt: x.n + " trades" }; })) + '</div>'));
+    eCard.appendChild(el('<p class="hint" style="margin:6px 0 0">Red = emotional states that usually cost you. Green = calm, planned trading.</p>'));
+    v.appendChild(eCard);
+    return v;
+  };
 
   // ---- LOG A TRADE ---------------------------------------------------------
   VIEWS.log = function () {

@@ -29,7 +29,7 @@
       limits: { history: Infinity } }
   };
   var FEATURE_MATRIX = {
-    home: "free", log: "free", trades: "free", card: "free", profile: "free", calc: "free",
+    home: "free", log: "free", trades: "free", card: "free", profile: "free", calc: "free", analytics: "free",
     insights: "plus", coach: "plus", badges: "plus", leaderboard: "plus",
     strategy: "pro"
   };
@@ -171,6 +171,24 @@
     return m.filter(function (x) { return x.n > 0; }).sort(function (a, b) { return b.n - a.n; });
   }
 
+  // Cumulative P&L (equity curve), oldest -> newest.
+  function equityCurve() {
+    var tr = load().trades.slice().sort(function (a, b) { return new Date(a.date) - new Date(b.date); });
+    var cum = 0; return tr.map(function (t) { cum += pnl(t); return { cum: cum, pnl: pnl(t), date: t.date, symbol: t.symbol }; });
+  }
+  // Per-trade discipline over time (oldest -> newest).
+  function disciplineTrend() {
+    var tr = load().trades.slice().sort(function (a, b) { return new Date(a.date) - new Date(b.date); });
+    return tr.map(function (t) { return tradeDiscipline(t); });
+  }
+  function winLoss() {
+    var tr = load().trades, w = tr.filter(isWin).length; return { wins: w, losses: tr.length - w, total: tr.length };
+  }
+  function emotionBreakdown() {
+    var by = {}; load().trades.forEach(function (t) { by[t.emotion] = (by[t.emotion] || 0) + 1; });
+    return Object.keys(by).map(function (k) { return { label: k, n: by[k] }; }).sort(function (a, b) { return b.n - a.n; });
+  }
+
   function setupPerformance() {
     var tr = load().trades, by = {};
     tr.forEach(function (t) { (by[t.setup] = by[t.setup] || { n: 0, pnl: 0, wins: 0 }); by[t.setup].n++; by[t.setup].pnl += pnl(t); if (isWin(t)) by[t.setup].wins++; });
@@ -191,6 +209,7 @@
     load: load, save: save, reset: reset, uid: uid, adapters: adapters,
     pnl: pnl, isWin: isWin, hasSL: hasSL, tradeDiscipline: tradeDiscipline,
     stats: stats, personality: personality, badges: badges, mistakes: mistakes, setupPerformance: setupPerformance,
+    equityCurve: equityCurve, disciplineTrend: disciplineTrend, winLoss: winLoss, emotionBreakdown: emotionBreakdown,
     setProfile: function (patch) { Object.assign(load().profile, patch); save(); },
     addTrade: function (t) { t.id = uid("t"); load().trades.unshift(t); save(); return t; },
     deleteTrade: function (id) { var s = load(); s.trades = s.trades.filter(function (t) { return t.id !== id; }); save(); }
