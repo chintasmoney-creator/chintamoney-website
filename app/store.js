@@ -265,6 +265,7 @@
     setPlanPrice: function (id, p) { var c = adminConfig(); c.priceOverrides[id] = p; saveAdmin(c); },
     setFlag: function (k, v) { var c = adminConfig(); c.flags[k] = v; saveAdmin(c); },
     load: load, save: save, reset: reset, uid: uid, adapters: adapters,
+    hydrate: function (obj) { if (obj && typeof obj === "object") { _s = obj; save(); } },
     pnl: pnl, isWin: isWin, hasSL: hasSL, tradeDiscipline: tradeDiscipline,
     stats: stats, personality: personality, badges: badges, mistakes: mistakes, setupPerformance: setupPerformance,
     equityCurve: equityCurve, disciplineTrend: disciplineTrend, winLoss: winLoss, emotionBreakdown: emotionBreakdown,

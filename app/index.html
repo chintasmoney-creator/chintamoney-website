@@ -20,11 +20,14 @@
 <body>
   <div id="root"></div>
 
+  <script src="config.js"></script>
+
   <!-- Install prompt (appears when the browser allows it) -->
   <button id="installBtn" hidden style="position:fixed;right:16px;bottom:16px;z-index:200;border:0;border-radius:999px;padding:.7rem 1.1rem;font-weight:700;color:#fff;background:linear-gradient(90deg,#0f9d76,#14b8a6);box-shadow:0 10px 24px rgba(20,184,166,.4);cursor:pointer">⬇ Install app</button>
 
   <script src="store.js"></script>
   <script src="app.js"></script>
+  <script src="cloud.js"></script>
   <script>
     // ---- PWA: service worker + install prompt ----
     if ("serviceWorker" in navigator) {

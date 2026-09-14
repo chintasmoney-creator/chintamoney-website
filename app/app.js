@@ -40,9 +40,53 @@
   function go(r) { location.hash = "#/" + r; }
   window.addEventListener("hashchange", render);
 
+  window.__cmRender = render;
   function render() {
+    // Cloud auth gate (only when backend is enabled in config.js)
+    if (window.CM_CONFIG && window.CM_CONFIG.cloud) {
+      var cs = window.CMCloud ? window.CMCloud.state : "loading";
+      if (cs === "loading" || cs === "off") { root.innerHTML = '<div class="onb"><div class="onb-card" style="text-align:center"><div style="font-size:1.6rem">₹</div><p class="hint">Loading your account…</p></div></div>'; return; }
+      if (cs === "anon") { renderAuth(); return; }
+      // "authed" or "error" → continue into the app
+    }
     if (!CM.load().profile.onboarded) { renderOnboarding(); return; }
     root.innerHTML = ""; root.appendChild(shell(route()));
+  }
+
+  // ---- Auth screen (cloud mode) --------------------------------------------
+  var authMode = "login";
+  function renderAuth() {
+    root.innerHTML = "";
+    var wrap = el('<div class="onb"></div>'), c = el('<div class="onb-card"></div>');
+    c.appendChild(el('<div class="brand" style="padding:0 0 6px"><span class="brand-badge brand-logo-chip"><img src="assets/logo.png" alt=""/></span><div><b style="color:var(--ink)">ChintasMoney</b><small style="color:var(--muted)">TRADER REPORT CARD</small></div></div>'));
+    c.appendChild(el('<h2 style="margin:12px 0 4px">' + (authMode === "login" ? "Welcome back" : "Create your account") + '</h2>'));
+    c.appendChild(el('<p class="hint">' + (authMode === "login" ? "Log in to sync your trades, streaks &amp; dreams across devices." : "Sign up free — your data is saved to your account.") + '</p>'));
+    var em = el('<label class="fld"><span>Email</span><input id="aEmail" type="email" placeholder="you@example.com"/></label>');
+    var pw = el('<label class="fld"><span>Password</span><input id="aPass" type="password" placeholder="••••••••"/></label>');
+    c.appendChild(em); c.appendChild(pw);
+    var msg = el('<p class="hint" id="aMsg" style="min-height:1.1em;color:var(--red)"></p>'); c.appendChild(msg);
+    var go = el('<button class="btn btn-primary" style="width:100%">' + (authMode === "login" ? "Log in" : "Sign up") + '</button>');
+    go.addEventListener("click", function () {
+      var email = c.querySelector("#aEmail").value.trim(), pass = c.querySelector("#aPass").value;
+      if (!email || !pass) { msg.textContent = "Enter email and password."; return; }
+      go.disabled = true; go.textContent = "Please wait…";
+      var op = authMode === "login" ? CMCloud.signIn(email, pass) : CMCloud.signUp(email, pass);
+      op.then(function (r) {
+        go.disabled = false; go.textContent = authMode === "login" ? "Log in" : "Sign up";
+        if (r && r.error) { msg.textContent = r.error.message; }
+        else if (authMode === "signup" && r && r.data && !r.data.session) { msg.style.color = "var(--green)"; msg.textContent = "Check your email to confirm, then log in."; }
+      }).catch(function (e) { go.disabled = false; go.textContent = "Try again"; msg.textContent = "Something went wrong."; });
+    });
+    c.appendChild(go);
+    if (window.CM_CONFIG.enableGoogle) {
+      var gg = el('<button class="btn" style="width:100%;margin-top:8px">Continue with Google</button>');
+      gg.addEventListener("click", function () { CMCloud.signInGoogle(); });
+      c.appendChild(gg);
+    }
+    var toggle = el('<p class="hint" style="text-align:center;margin-top:14px;cursor:pointer">' + (authMode === "login" ? "New here? <b style=\"color:var(--violet)\">Create an account</b>" : "Already have an account? <b style=\"color:var(--violet)\">Log in</b>") + '</p>');
+    toggle.addEventListener("click", function () { authMode = authMode === "login" ? "signup" : "login"; renderAuth(); });
+    c.appendChild(toggle);
+    wrap.appendChild(c); root.appendChild(wrap);
   }
 
   function shell(r) {
@@ -886,13 +930,24 @@
       var card = el('<div class="plan' + (id === "plus" ? " feat" : "") + '">' + (id === "plus" ? '<span class="badge b-green" style="align-self:flex-start;margin-bottom:8px">Most popular</span>' : '') +
         '<h3>' + p.name + '</h3><div class="amt">' + (p.price ? "₹" + p.price : "Free") + '<span class="hint" style="font-size:.9rem;font-weight:500">' + (p.price ? "/" + p.cadence : "") + '</span></div><p class="hint">' + p.blurb + '</p>' +
         '<ul>' + p.features.slice(0, 7).map(function (f) { return '<li>' + f.replace(/-/g, " ") + '</li>'; }).join("") + '</ul></div>');
-      var b = el('<button class="btn ' + (cur ? "" : "btn-primary") + '"' + (cur ? " disabled" : "") + '>' + (cur ? "Current plan" : "Switch to " + p.name) + '</button>');
-      b.addEventListener("click", function () { CM.setProfile({ plan: id }); render(); });
+      var payMode = window.CM_CONFIG && window.CM_CONFIG.cloud && window.CM_CONFIG.razorpayKeyId && id !== "free";
+      var label = cur ? "Current plan" : (payMode ? "Subscribe · ₹" + Math.round((window.CM_CONFIG.planPrices[id] || 0) / 100) : "Switch to " + p.name);
+      var b = el('<button class="btn ' + (cur ? "" : "btn-primary") + '"' + (cur ? " disabled" : "") + '>' + label + '</button>');
+      b.addEventListener("click", function () {
+        if (cur) return;
+        if (payMode) { window.CMCloud.checkout(id, function () { render(); }); }
+        else { CM.setProfile({ plan: id }); render(); }
+      });
       card.appendChild(b); plans.appendChild(card);
     });
     v.appendChild(plans);
     var reset = el('<button class="btn btn-ghost" style="margin-top:20px">↺ Reset demo data</button>'); reset.addEventListener("click", function () { if (confirm("Reset all local data?")) { CM.reset(); go("home"); render(); } });
     v.appendChild(reset);
+    if (window.CMCloud && window.CMCloud.state === "authed") {
+      v.appendChild(el('<div class="hint" style="margin-top:12px">Signed in as <b>' + esc((window.CMCloud.user && window.CMCloud.user.email) || "") + '</b> · synced to cloud ☁️</div>'));
+      var so = el('<button class="btn btn-ghost btn-sm" style="margin-top:6px">Sign out</button>'); so.addEventListener("click", function () { window.CMCloud.signOut(); });
+      v.appendChild(so);
+    }
     v.appendChild(el('<div class="disclaimer"><b>Important:</b> ChintasMoney is a trading self-awareness &amp; journaling tool. It does <b>not</b> give buy/sell calls, tips, or investment advice, and makes no return claims. Trading in F&O is risky and most traders lose money. Your data stays on your device in this MVP.</div>'));
     return v;
   };
