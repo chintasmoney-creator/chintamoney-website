@@ -42,7 +42,7 @@
   function shell(r) {
     var s = CM.load(), wrap = el('<div class="app"></div>');
     var side = el('<aside class="sidebar' + (mobileOpen ? " open" : "") + '"></aside>');
-    side.appendChild(el('<a class="brand" href="../index.html"><span class="brand-badge">₹</span><div><b>ChintasMoney</b><small>TRADER REPORT CARD</small></div></a>'));
+    side.appendChild(el('<a class="brand" href="../index.html"><span class="brand-badge brand-logo-chip"><img src="assets/logo.png" alt="ChintasMoney"/></span><div><b>ChintasMoney</b><small>TRADER REPORT CARD</small></div></a>'));
     NAV.forEach(function (n) {
       if (n.sep) { side.appendChild(el('<div class="nav-sep"></div>')); if (n.group) side.appendChild(el('<div style="color:#6f83ab;font-size:.66rem;letter-spacing:.08em;padding:2px 10px 4px">' + n.group.toUpperCase() + '</div>')); return; }
       var locked = !CM.planAllows(s.profile.plan, n.id);
@@ -413,7 +413,7 @@
   function renderOnboarding() {
     root.innerHTML = "";
     var wrap = el('<div class="onb"></div>'), c = el('<div class="onb-card"></div>');
-    c.appendChild(el('<div class="brand" style="padding:0 0 6px"><span class="brand-badge">₹</span><div><b style="color:var(--ink)">ChintasMoney</b><small style="color:var(--muted)">TRADER REPORT CARD</small></div></div>'));
+    c.appendChild(el('<div class="brand" style="padding:0 0 6px"><span class="brand-badge brand-logo-chip"><img src="assets/logo.png" alt="ChintasMoney"/></span><div><b style="color:var(--ink)">ChintasMoney</b><small style="color:var(--muted)">TRADER REPORT CARD</small></div></div>'));
     if (onb.step === 0) {
       c.appendChild(el('<h2 style="margin:12px 0 4px">Ready for the honest truth? 👀</h2>'));
       c.appendChild(el('<p class="hint">Most traders track P&L. You\'re about to track the thing that actually decides it — your discipline. What should we call you?</p>'));

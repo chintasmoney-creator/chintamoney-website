@@ -31,7 +31,7 @@
 
     // sidebar
     var side = el('<aside class="sidebar"></aside>');
-    side.appendChild(el('<a class="brand" href="index.html"><span class="brand-badge">₹</span><div><b>ChintasMoney</b><small>ADMIN CONSOLE</small></div></a>'));
+    side.appendChild(el('<a class="brand" href="index.html"><span class="brand-badge brand-logo-chip"><img src="assets/logo.png" alt="ChintasMoney"/></span><div><b>ChintasMoney</b><small>ADMIN CONSOLE</small></div></a>'));
     [["overview", "▦ Overview"], ["users", "☰ Users"], ["subs", "◈ Subscriptions"], ["plans", "₹ Plans & pricing"],
      ["flags", "⚑ Feature flags"], ["usage", "▤ Usage & AI"], ["data", "⇄ Data sources"], ["support", "✉ Support"]].forEach(function (t) {
       var a = el('<a class="nav-item' + (TAB === t[0] ? " active" : "") + '" href="#">' + t[1] + '</a>');
