@@ -206,40 +206,49 @@
     return s;
   }
 
-  var mkState = { sym: "NIFTY", ma: true, volume: true, markers: true };
+  var mkState = { sym: "NIFTY" };
   var SYMBOLS = [["NIFTY", 24800, 11], ["BANKNIFTY", 51200, 23], ["RELIANCE", 2980, 7], ["TCS", 3910, 31], ["TATAMOTORS", 985, 5], ["ZOMATO", 168, 13]];
   VIEWS.markets = function () {
     var v = el('<div></div>');
-    v.appendChild(topbar("Charts", "Read the tape — candles, volume &amp; moving averages. (Demo data.)"));
+    v.appendChild(topbar("Live Charts", "Real market data — candles, volume, indicators. Powered by TradingView."));
     var card = el('<div class="card"></div>');
-    // symbol chips
     var symRow = el('<div class="chart-toolbar"></div>');
-    SYMBOLS.forEach(function (S) {
-      var b = el('<button class="chart-toggle' + (mkState.sym === S[0] ? " on" : "") + '">' + S[0] + '</button>');
-      b.addEventListener("click", function () { mkState.sym = S[0]; go("markets"); render(); });
+    Object.keys(TV_SYM).forEach(function (k) {
+      var b = el('<button class="chart-toggle' + (mkState.sym === k ? " on" : "") + '">' + k + '</button>');
+      b.addEventListener("click", function () { mkState.sym = k; go("markets"); render(); });
       symRow.appendChild(b);
     });
     card.appendChild(symRow);
-    // indicator toggles
-    var tog = el('<div class="chart-toolbar"></div>');
-    [["ma", "MA (9/21)"], ["volume", "Volume"], ["markers", "Trades"]].forEach(function (t) {
-      var b = el('<button class="chart-toggle' + (mkState[t[0]] ? " on" : "") + '">' + t[1] + '</button>');
-      b.addEventListener("click", function () { mkState[t[0]] = !mkState[t[0]]; go("markets"); render(); });
-      tog.appendChild(b);
-    });
-    card.appendChild(tog);
-    // data + header stats
-    var S = SYMBOLS.filter(function (x) { return x[0] === mkState.sym; })[0];
-    var data = genCandles(60, S[2], S[1]);
-    var last = data[n_(data)], first = data[0], chg = (last.c - first.o), chgP = chg / first.o * 100;
-    card.appendChild(el('<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:baseline;margin:4px 0 10px"><b style="font-size:1.3rem">' + mkState.sym + '</b><span class="mono" style="font-size:1.2rem">' + fmtP(last.c) + '</span><span class="mono ' + (chg >= 0 ? "pos" : "neg") + '">' + (chg >= 0 ? "▲ +" : "▼ ") + fmtP(chg) + ' (' + chgP.toFixed(2) + '%)</span></div>'));
-    card.appendChild(el(svgCandleChart(data, mkState)));
-    card.appendChild(el('<div class="legend"><span><i style="background:#22e08a"></i>Bull candle</span><span><i style="background:#ff5a6a"></i>Bear candle</span><span><i style="background:#a78bfa"></i>MA 9</span><span><i style="background:#f5b849"></i>MA 21</span></div>'));
-    card.appendChild(el('<p class="hint" style="margin-top:10px"><span class="mock-tag">DEMO</span> Illustrative chart with sample data. Live market data connects via the data adapter in a later phase — no fake “live” feed is claimed.</p>'));
+    card.appendChild(tvAdvanced(TV_SYM[mkState.sym] || "NSE:NIFTY", 520));
+    card.appendChild(el('<p class="hint" style="margin-top:10px">Full candles, volume &amp; every indicator (RSI, MACD, MA, Bollinger…) — add them from the chart toolbar. Change the symbol to any NSE stock.</p>'));
     v.appendChild(card);
     return v;
   };
-  function n_(a) { return a.length - 1; }
+
+  // ---- TradingView live embeds (real market data) --------------------------
+  function tvEmbed(src, config, heightPx) {
+    var wrap = el('<div class="tradingview-widget-container" style="height:' + heightPx + 'px;width:100%;position:relative">' +
+      '<div class="tradingview-widget-container__widget" style="height:calc(100% - 22px);width:100%"></div>' +
+      '<div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank" style="color:#8a83a6;font-size:.72rem;text-decoration:none">Live data by TradingView</a></div></div>');
+    var s = document.createElement("script"); s.async = true; s.src = src; s.type = "text/javascript"; s.innerHTML = JSON.stringify(config);
+    wrap.appendChild(s);
+    return wrap;
+  }
+  var TV_SYM = { NIFTY: "NSE:NIFTY", BANKNIFTY: "NSE:BANKNIFTY", RELIANCE: "NSE:RELIANCE", TCS: "NSE:TCS", TATAMOTORS: "NSE:TATAMOTORS", ZOMATO: "NSE:ZOMATO" };
+  function tvAdvanced(sym, h) {
+    return tvEmbed("https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js", {
+      autosize: true, symbol: sym, interval: "D", timezone: "Asia/Kolkata", theme: "dark", style: "1",
+      locale: "in", allow_symbol_change: true, hide_side_toolbar: false, backgroundColor: "#0a0713",
+      gridColor: "rgba(139,92,246,0.08)", support_host: "https://www.tradingview.com"
+    }, h || 480);
+  }
+  function tvMini(sym, title, h) {
+    return tvEmbed("https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js", {
+      symbols: [[title || sym, sym + "|3M"]], chartOnly: false, colorTheme: "dark", isTransparent: true,
+      autosize: true, showVolume: false, locale: "in", gridLineColor: "rgba(139,92,246,0.08)",
+      lineColor: "#22e08a", topColor: "rgba(34,224,138,0.25)", bottomColor: "rgba(34,224,138,0)"
+    }, h || 240);
+  }
 
   // ---- Chintamani mascot (wise old risk-manager) ---------------------------
   function mascot(size) {
@@ -308,8 +317,8 @@
     }
     // 5. mini chart nudge
     var mc = el('<div class="card"></div>');
-    mc.appendChild(el('<div class="card-hd"><h3>📈 Market pulse</h3><span class="mock-tag">DEMO</span></div>'));
-    mc.appendChild(el(svgCandleChart(genCandles(40, 11, 24800), { ma: true, volume: false, markers: false })));
+    mc.appendChild(el('<div class="card-hd"><h3>📈 NIFTY 50 · live</h3></div>'));
+    mc.appendChild(tvMini("NSE:NIFTY", "NIFTY 50", 200));
     feed.appendChild(mc);
     // 6. equity nudge
     var eq = CM.equityCurve();
@@ -383,11 +392,11 @@
     hero.appendChild(right);
     v.appendChild(hero);
 
-    // candlestick chart card
+    // live chart card
     var chc = el('<div class="card" style="margin-top:16px"></div>');
-    chc.appendChild(el('<div class="card-hd"><h3>📈 NIFTY · chart</h3><span class="mock-tag">DEMO</span></div>'));
-    chc.appendChild(el(svgCandleChart(genCandles(56, 11, 24800), { ma: true, volume: true, markers: true })));
-    var chb = el('<button class="btn btn-ghost btn-sm" style="margin-top:8px">Open Charts →</button>');
+    chc.appendChild(el('<div class="card-hd"><h3>📈 NIFTY 50 · live</h3></div>'));
+    chc.appendChild(tvMini("NSE:NIFTY", "NIFTY 50", 220));
+    var chb = el('<button class="btn btn-ghost btn-sm" style="margin-top:8px">Open full charts →</button>');
     chb.addEventListener("click", function () { go("markets"); });
     chc.appendChild(chb);
     v.appendChild(chc);

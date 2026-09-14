@@ -63,6 +63,7 @@ img{max-width:100%;display:block}
 .nav-toggle span{width:24px;height:2px;background:var(--ink);border-radius:2px}
 
 /* Ticker */
+.tv-ticker{border-block:1px solid var(--line);background:var(--bg-2);min-height:46px}
 .ticker{border-block:1px solid var(--line);background:var(--bg-2);overflow:hidden;white-space:nowrap}
 .ticker .track{display:inline-flex;gap:2.4rem;padding:.55rem 0;animation:scroll 32s linear infinite}
 .ticker .t{font-family:var(--mono);font-size:.82rem;color:var(--ink-soft)}
