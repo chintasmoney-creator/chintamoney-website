@@ -84,4 +84,59 @@
 
   // if hero already in view on load, kick gauge
   setTimeout(drawGauge, 400);
+
+  // ---- Risk & position-size calculator ----
+  var side = "long";
+  function inr(n) { return "₹" + Math.round(n).toLocaleString("en-IN"); }
+  function num(id) { var v = parseFloat(($(id) || {}).value); return isNaN(v) ? 0 : v; }
+  function calc() {
+    if (!$("#calcForm")) return;
+    var cap = num("#cCapital"), riskPct = num("#cRisk"), entry = num("#cEntry"),
+        stop = num("#cStop"), target = num("#cTarget"), lot = Math.max(1, num("#cLot") || 1);
+    var riskAmt = cap * riskPct / 100;
+    var perUnit = Math.abs(entry - stop);
+    var units = perUnit > 0 ? Math.floor(riskAmt / perUnit / lot) * lot : 0;
+    var value = units * entry;
+    // validity of stop relative to side
+    var stopValid = side === "long" ? stop < entry : stop > entry;
+    var rr = 0, reward = 0, rewardPct = 0, targetValid = true;
+    if (target > 0) {
+      var rewUnit = side === "long" ? (target - entry) : (entry - target);
+      targetValid = rewUnit > 0;
+      reward = units * Math.max(0, rewUnit);
+      rr = perUnit > 0 ? Math.max(0, rewUnit) / perUnit : 0;
+      rewardPct = value > 0 ? reward / value * 100 : 0;
+    }
+    $("#oRisk").textContent = inr(riskAmt);
+    $("#oQty").textContent = units.toLocaleString("en-IN") + (lot > 1 ? " (" + (units / lot) + " lots)" : " units");
+    $("#oValue").textContent = inr(value);
+    $("#oRR").textContent = rr ? "1 : " + rr.toFixed(2) : "—";
+    $("#oReward").textContent = reward ? inr(reward) : "—";
+    $("#oRewardPct").textContent = rewardPct ? "+" + rewardPct.toFixed(1) + "%" : "—";
+
+    var v = $("#cVerdict"), note = $("#cNote");
+    if (!stopValid) {
+      v.innerHTML = '<span class="warn">⚠ CHECK YOUR STOP</span>';
+      note.textContent = side === "long" ? "For a long, your stop-loss should be BELOW your entry." : "For a short, your stop-loss should be ABOVE your entry.";
+    } else if (target > 0 && !targetValid) {
+      v.innerHTML = '<span class="warn">⚠ CHECK YOUR TARGET</span>';
+      note.textContent = side === "long" ? "For a long, your target should be ABOVE your entry." : "For a short, your target should be BELOW your entry.";
+    } else if (rr && rr >= 2) {
+      v.innerHTML = side === "long" ? '<span class="bull">▲ STRONG SETUP · R:R ' + rr.toFixed(1) + '</span>' : '<span class="bear">▼ STRONG SHORT · R:R ' + rr.toFixed(1) + '</span>';
+      note.textContent = "A 1:2 or better risk:reward keeps you profitable even at a 40% win rate. Disciplined.";
+    } else if (rr && rr < 1) {
+      v.innerHTML = '<span class="warn">⚠ POOR RISK : REWARD</span>';
+      note.textContent = "You're risking more than you stand to make. Most disciplined traders skip these.";
+    } else {
+      v.innerHTML = side === "long" ? '<span class="bull">▲ LONG SETUP</span>' : '<span class="bear">▼ SHORT SETUP</span>';
+      note.textContent = "You risk " + inr(riskAmt) + " to make " + (reward ? inr(reward) : "your target") + ". Size fixed before you click.";
+    }
+  }
+  var cf = $("#calcForm");
+  if (cf) {
+    cf.addEventListener("input", calc);
+    $("#segLong").addEventListener("click", function () { side = "long"; this.classList.add("active"); this.classList.remove("bear"); $("#segShort").classList.remove("active", "bear"); calc(); });
+    $("#segShort").addEventListener("click", function () { side = "short"; this.classList.add("active", "bear"); $("#segLong").classList.remove("active"); calc(); });
+    calc();
+  }
 })();

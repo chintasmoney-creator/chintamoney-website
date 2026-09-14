@@ -29,7 +29,7 @@
       limits: { history: Infinity } }
   };
   var FEATURE_MATRIX = {
-    home: "free", log: "free", trades: "free", card: "free", profile: "free",
+    home: "free", log: "free", trades: "free", card: "free", profile: "free", calc: "free",
     insights: "plus", coach: "plus", badges: "plus", leaderboard: "plus",
     strategy: "pro"
   };

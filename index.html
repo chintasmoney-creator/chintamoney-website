@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="ChintasMoney — the Trader Report Card. Log your trades, get a brutally honest Discipline Score, find the mistakes bleeding your account. Discipline over profit." />
+  <meta name="description" content="ChintasMoney — the Trader Report Card. Log your trades, get a brutally honest Discipline Score, use free trader tools. Discipline over profit. Built for Indian F&O, intraday & swing traders." />
   <title>ChintasMoney — The Trader Report Card</title>
   <meta name="theme-color" content="#05070e" />
   <link rel="icon" href="assets/favicon.png" />
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
   <meta property="og:title" content="ChintasMoney — The Trader Report Card" />
-  <meta property="og:description" content="Your P&L lies. Your discipline doesn't. Get your Discipline Score in 2 minutes." />
+  <meta property="og:description" content="Your P&L lies. Your discipline doesn't. Get your Discipline Score + free risk calculator in 2 minutes." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -22,7 +22,8 @@
       <a href="#top" class="brand"><img src="assets/logo.png" alt="ChintasMoney" /> Chintas<b>Money</b></a>
       <nav class="nav-links" id="navLinks">
         <a href="#how">How it works</a>
-        <a href="#features">Features</a>
+        <a href="#who">Who it's for</a>
+        <a href="#calc">Free tools</a>
         <a href="#pricing">Pricing</a>
         <a href="#faq">FAQ</a>
         <a href="app/index.html" class="btn btn-primary">Get my score →</a>
@@ -32,9 +33,7 @@
   </header>
 
   <!-- Ticker -->
-  <div class="ticker">
-    <div class="track" id="ticker"></div>
-  </div>
+  <div class="ticker"><div class="track" id="ticker"></div></div>
 
   <!-- Hero -->
   <section class="hero" id="top">
@@ -42,14 +41,14 @@
       <div class="reveal">
         <span class="pill">● Discipline over profit</span>
         <h1>Your P&amp;L lies.<br/>Your <span class="grad">discipline</span> doesn't.</h1>
-        <p class="lead">ChintasMoney is the <b>Trader Report Card</b>. Log your trades and get a brutally honest <b>Discipline Score</b>, your trader personality, and the exact mistakes bleeding your account.</p>
-        <p class="who">Built for F&amp;O, intraday &amp; swing traders. No tips. No calls. Just the mirror.</p>
+        <p class="lead">ChintasMoney is the <b>Trader Report Card</b>. Log your trades and get a brutally honest <b>Discipline Score</b>, your trader personality, the mistakes bleeding your account — plus free tools to size every trade right.</p>
+        <p class="who">For Indian F&amp;O, intraday &amp; swing traders. No tips. No calls. Just the mirror.</p>
         <div class="hero-cta">
           <a href="app/index.html" class="btn btn-primary btn-lg">Get my Discipline Score →</a>
-          <a href="#how" class="btn btn-ghost btn-lg">See how it works</a>
+          <a href="#calc" class="btn btn-ghost btn-lg">Try the free calculator</a>
         </div>
         <div class="stats">
-          <div class="s"><b class="up" data-count="93">0</b><span>% of F&amp;O traders lose (SEBI)</span></div>
+          <div class="s"><b class="up" data-count="93" data-suffix="%">0</b><span>of F&amp;O traders lose (SEBI)</span></div>
           <div class="s"><b data-count="2">0</b><span>minutes to your score</span></div>
           <div class="s"><b>₹0</b><span>to start · no card</span></div>
         </div>
@@ -69,11 +68,7 @@
               <div class="lbl">Your personality</div>
               <div class="persona">😤 The Revenge Trader</div>
               <div class="sub">After a loss, you fire back fast — and it's costing you.</div>
-              <div class="chips">
-                <span class="chip r">no SL ×4</span>
-                <span class="chip r">revenge ×2</span>
-                <span class="chip g">win 50%</span>
-              </div>
+              <div class="chips"><span class="chip r">no SL ×4</span><span class="chip r">revenge ×2</span><span class="chip g">win 50%</span></div>
             </div>
           </div>
           <div class="candles" id="candles"></div>
@@ -85,11 +80,7 @@
   <!-- How it works -->
   <section class="section" id="how">
     <div class="container">
-      <div class="center reveal">
-        <span class="eyebrow">How it works</span>
-        <h2>Three steps to the honest truth</h2>
-        <p class="sub">You log the trades. We do the maths your broker never shows you.</p>
-      </div>
+      <div class="center reveal"><span class="eyebrow">How it works</span><h2>Three steps to the honest truth</h2><p class="sub">You log the trades. We do the maths your broker never shows you.</p></div>
       <div class="steps">
         <div class="step reveal"><div class="n">01</div><h3>Log your trades</h3><p>Entry, exit, your stop, why you exited, how you felt. 20 seconds a trade. CSV import too.</p><span class="arrow">→</span></div>
         <div class="step reveal"><div class="n">02</div><h3>Get your Report Card</h3><p>Instant Discipline Score, trader personality, win rate, risk:reward and your top mistakes.</p><span class="arrow">→</span></div>
@@ -98,37 +89,84 @@
     </div>
   </section>
 
-  <!-- Bento features -->
+  <!-- Who it's for -->
+  <section class="section" id="who">
+    <div class="container">
+      <div class="center reveal"><span class="eyebrow">Who it's for</span><h2>If you trade and want to stop losing to yourself</h2><p class="sub">Whatever you trade, the enemy is the same — your own behaviour. ChintasMoney fits your style.</p></div>
+      <div class="bento">
+        <div class="card col-2 reveal"><div class="ic">⚡</div><h3>F&amp;O / Options traders</h3><p>High-frequency, high-emotion. See revenge trades, no-SL entries and overtrading before they wipe a month.</p></div>
+        <div class="card col-2 reveal"><div class="ic">📊</div><h3>Intraday traders</h3><p>Track setup performance and time-of-day patterns. Find the hours and setups that actually pay.</p></div>
+        <div class="card col-2 reveal"><div class="ic">📈</div><h3>Swing traders</h3><p>Hold longer, decide better. Journal your thesis and stop cutting winners early out of fear.</p></div>
+        <div class="card col-3 reveal"><div class="ic">🌱</div><h3>Beginners</h3><p>Build good habits from day one. The score teaches discipline before the market teaches it the hard way.</p></div>
+        <div class="card col-3 reveal"><div class="ic">🧭</div><h3>Serious, systematic traders</h3><p>R-multiples, strategy stats, weekly reports and CSV export to run your trading like a business.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Free Calculator (lead magnet) -->
+  <section class="section" id="calc">
+    <div class="container">
+      <div class="center reveal"><span class="eyebrow">Free tools · no signup</span><h2>Risk &amp; Position-Size Calculator</h2><p class="sub">The #1 discipline habit: never risk more than you planned. Size every trade in seconds.</p></div>
+      <div class="calc reveal">
+        <form class="calc-form" id="calcForm" novalidate>
+          <div class="seg" role="tablist">
+            <button type="button" class="seg-btn active" data-side="long" id="segLong">▲ Long / Buy</button>
+            <button type="button" class="seg-btn" data-side="short" id="segShort">▼ Short / Sell</button>
+          </div>
+          <div class="grid2">
+            <label>Account capital (₹)<input type="number" id="cCapital" value="100000" min="0" inputmode="decimal"></label>
+            <label>Risk per trade (%)<input type="number" id="cRisk" value="1" min="0" step="0.1" inputmode="decimal"></label>
+            <label>Entry price<input type="number" id="cEntry" value="100" min="0" step="0.05" inputmode="decimal"></label>
+            <label>Stop-loss price<input type="number" id="cStop" value="95" min="0" step="0.05" inputmode="decimal"></label>
+            <label>Target price <span class="opt">(optional)</span><input type="number" id="cTarget" value="110" min="0" step="0.05" inputmode="decimal"></label>
+            <label>Lot / multiplier <span class="opt">(F&amp;O)</span><input type="number" id="cLot" value="1" min="1" step="1" inputmode="numeric"></label>
+          </div>
+        </form>
+        <div class="calc-out" id="calcOut">
+          <div class="verdict" id="cVerdict"><span class="bull">▲ BULL SETUP</span></div>
+          <div class="out-grid">
+            <div class="o"><span class="lbl">You risk</span><b id="oRisk" class="mono down">₹1,000</b></div>
+            <div class="o"><span class="lbl">Position size</span><b id="oQty" class="mono">200 units</b></div>
+            <div class="o"><span class="lbl">Position value</span><b id="oValue" class="mono">₹20,000</b></div>
+            <div class="o"><span class="lbl">Risk : Reward</span><b id="oRR" class="mono up">1 : 2.0</b></div>
+            <div class="o"><span class="lbl">Potential reward</span><b id="oReward" class="mono up">₹2,000</b></div>
+            <div class="o"><span class="lbl">Reward if hit</span><b id="oRewardPct" class="mono up">+2.0%</b></div>
+          </div>
+          <p class="calc-note" id="cNote">A 1:2 or better risk:reward keeps you profitable even at a 40% win rate.</p>
+          <a href="app/index.html" class="btn btn-primary" style="margin-top:6px">Log this trade in the app →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bull & Bear band -->
+  <section class="band">
+    <div class="container section bullbear reveal">
+      <div class="bb bull-side">
+        <div class="bb-ic">🐂</div><h3>Bull days</h3>
+        <p>Euphoria makes you oversize and chase. Discipline caps your risk when everyone feels invincible.</p>
+      </div>
+      <div class="bb-vs">VS</div>
+      <div class="bb bear-side">
+        <div class="bb-ic">🐻</div><h3>Bear days</h3>
+        <p>Fear makes you revenge-trade and dump winners early. Your rules don't care what mood the market is in.</p>
+      </div>
+      <p class="bb-tag">Bull or bear — <b>your discipline shouldn't change.</b> ChintasMoney keeps you honest in both.</p>
+    </div>
+  </section>
+
+  <!-- Features bento -->
   <section class="section" id="features">
     <div class="container">
-      <div class="center reveal">
-        <span class="eyebrow">What you get</span>
-        <h2>The mirror every trader avoids — and needs</h2>
-        <p class="sub">Every app shows your profit &amp; loss. None show you <em>why</em> — your own behaviour. ChintasMoney does.</p>
-      </div>
+      <div class="center reveal"><span class="eyebrow">What you get</span><h2>The mirror every trader avoids — and needs</h2><p class="sub">Every app shows your profit &amp; loss. None show you <em>why</em> — your own behaviour. ChintasMoney does.</p></div>
       <div class="bento">
-        <div class="card col-3 reveal">
-          <div class="ic">🎯</div><h3>Discipline Score</h3>
-          <p>One honest number, 0–100, built from your own trades: stops, planned exits, emotions, overtrading. The metric P&amp;L can't fake.</p>
-          <div class="mini-bars"><i style="height:30%"></i><i style="height:55%"></i><i style="height:40%"></i><i style="height:70%"></i><i style="height:52%"></i><i style="height:85%"></i><i style="height:66%"></i><i style="height:95%"></i></div>
-        </div>
-        <div class="card col-3 reveal">
-          <div class="ic">😤</div><h3>Trader Personality</h3>
-          <p>The Revenge Trader. The Early Exiter. The FOMO Chaser. We name the pattern that's costing you — and it stings because it's true.</p>
-          <div class="tagrow"><span class="tag r">Revenge Trader</span><span class="tag y">Early Exiter</span><span class="tag">FOMO Chaser</span><span class="tag g">Disciplined Sniper</span></div>
-        </div>
-        <div class="card col-2 reveal">
-          <div class="ic">🔍</div><h3>Mistake Insights</h3>
-          <p>Your repeating leaks, ranked — so you know exactly what to fix first.</p>
-        </div>
-        <div class="card col-2 reveal">
-          <div class="ic">🏅</div><h3>Streaks &amp; Badges</h3>
-          <p>Rewards for discipline, not gambling. “No-Revenge Week”, “Stop-loss Respecter”.</p>
-        </div>
-        <div class="card col-2 reveal">
-          <div class="ic">↗</div><h3>Shareable Card</h3>
-          <p>A slick card of your score &amp; personality. Screenshot it. Tag a trader who needs it.</p>
-        </div>
+        <div class="card col-3 reveal"><div class="ic">🎯</div><h3>Discipline Score</h3><p>One honest number, 0–100, from your own trades: stops, planned exits, emotions, overtrading. The metric P&amp;L can't fake.</p><div class="mini-bars"><i style="height:30%"></i><i style="height:55%"></i><i style="height:40%"></i><i style="height:70%"></i><i style="height:52%"></i><i style="height:85%"></i><i style="height:66%"></i><i style="height:95%"></i></div></div>
+        <div class="card col-3 reveal"><div class="ic">😤</div><h3>Trader Personality</h3><p>The Revenge Trader. The Early Exiter. The FOMO Chaser. We name the pattern that's costing you — and it stings because it's true.</p><div class="tagrow"><span class="tag r">Revenge Trader</span><span class="tag y">Early Exiter</span><span class="tag">FOMO Chaser</span><span class="tag g">Disciplined Sniper</span></div></div>
+        <div class="card col-2 reveal"><div class="ic">📐</div><h3>Setup Performance</h3><p>Which of your setups actually make money — and which quietly bleed you.</p></div>
+        <div class="card col-2 reveal"><div class="ic">🧮</div><h3>Risk Tools</h3><p>Position-size &amp; R:R calculators built in, so every trade is sized before you click.</p></div>
+        <div class="card col-2 reveal"><div class="ic">🔍</div><h3>Mistake Insights</h3><p>Your repeating leaks, ranked — you always know what to fix first.</p></div>
+        <div class="card col-3 reveal"><div class="ic">🏅</div><h3>Streaks &amp; Badges</h3><p>Rewards for discipline, not gambling. “No-Revenge Week”, “Stop-loss Respecter”, “Planned Exit ×5”.</p></div>
+        <div class="card col-3 reveal"><div class="ic">↗</div><h3>Shareable Card</h3><p>A slick card of your score &amp; personality. Screenshot it, post it, tag a trader who needs it — that's how it spreads.</p></div>
       </div>
     </div>
   </section>
@@ -157,17 +195,8 @@
   <!-- Product preview -->
   <section class="section">
     <div class="container">
-      <div class="center reveal">
-        <span class="eyebrow">Inside the app</span>
-        <h2>Your whole trading self, on one screen</h2>
-        <p class="sub">“Do I still trade with discipline?” — answered from your own data, every time you log.</p>
-      </div>
-      <div class="preview reveal">
-        <div class="frame">
-          <div class="bar"><span class="dot3"><i></i><i></i><i></i></span><span class="url">chintasmoney.com/app</span></div>
-          <img src="assets/app-shot.png" alt="ChintasMoney Trader Report Card dashboard" loading="lazy" />
-        </div>
-      </div>
+      <div class="center reveal"><span class="eyebrow">Inside the app</span><h2>Your whole trading self, on one screen</h2><p class="sub">“Do I still trade with discipline?” — answered from your own data, every time you log.</p></div>
+      <div class="preview reveal"><div class="frame"><div class="bar"><span class="dot3"><i></i><i></i><i></i></span><span class="url">chintasmoney.com/app</span></div><img src="assets/app-shot.png" alt="ChintasMoney Trader Report Card dashboard" loading="lazy" /></div></div>
     </div>
   </section>
 
@@ -186,25 +215,26 @@
   <!-- Pricing -->
   <section class="section" id="pricing">
     <div class="container">
-      <div class="center reveal"><span class="eyebrow">Pricing</span><h2>Start free. Upgrade when it clicks.</h2><p class="sub">Prices are configurable — no card needed to start.</p></div>
+      <div class="center reveal"><span class="eyebrow">Pricing</span><h2>Start free. Try Pro for 7 days.</h2><p class="sub">Free forever to log trades &amp; get your score. Upgrade for the full picture — cancel anytime.</p></div>
       <div class="plans">
         <div class="plan reveal">
           <h3>Free</h3><div class="amt">₹0<span> /forever</span></div>
-          <ul><li>Log trades &amp; Discipline Score</li><li>Trader personality</li><li>Basic mistakes · last 30 days</li></ul>
+          <ul><li>Log trades &amp; Discipline Score</li><li>Trader personality</li><li>Risk calculator</li><li>Basic mistakes · last 30 days</li></ul>
           <a href="app/index.html" class="btn btn-ghost">Start free</a>
         </div>
         <div class="plan feat reveal">
-          <span class="badge">Most popular</span>
+          <span class="badge">Most popular · 7-day trial</span>
           <h3>Plus</h3><div class="amt">₹199<span> /month</span></div>
-          <ul><li>Unlimited history &amp; full mistake analysis</li><li>Setup &amp; time-of-day insights</li><li>Streaks, badges &amp; pro shareable card</li><li>AI Discipline Coach</li></ul>
-          <a href="app/index.html" class="btn btn-primary">Choose Plus</a>
+          <ul><li>Everything in Free</li><li>Unlimited history &amp; full mistake analysis</li><li>Setup &amp; time-of-day insights</li><li>Streaks, badges &amp; pro shareable card</li><li>AI Discipline Coach</li></ul>
+          <a href="app/index.html" class="btn btn-primary">Start 7-day trial</a>
         </div>
         <div class="plan reveal">
           <h3>Pro</h3><div class="amt">₹499<span> /month</span></div>
-          <ul><li>Strategy / setup performance</li><li>Risk &amp; R-multiple analytics</li><li>CSV import/export &amp; weekly report</li></ul>
+          <ul><li>Everything in Plus</li><li>Strategy / setup performance</li><li>Risk &amp; R-multiple analytics</li><li>CSV import/export &amp; weekly report</li></ul>
           <a href="app/index.html" class="btn btn-ghost">Go Pro</a>
         </div>
       </div>
+      <p class="center sub" style="margin-top:22px;font-size:.9rem">Prices are configurable. No card required to start the free plan or the trial in this preview.</p>
     </div>
   </section>
 
@@ -213,31 +243,30 @@
     <div class="container">
       <div class="center reveal"><span class="eyebrow">FAQ</span><h2>Straight answers</h2></div>
       <div class="faq reveal">
-        <details><summary>Do you give buy/sell tips?</summary><p>No. Never. ChintasMoney gives zero trading calls, tips, or investment advice. It's a self-awareness and journaling tool that mirrors <em>your</em> behaviour — nothing more.</p></details>
-        <details><summary>Do I need to connect my broker?</summary><p>No. You log your trades yourself (or import a CSV). That's the point — your data, your mirror. No broker login, no market-data fees.</p></details>
-        <details><summary>What is the Discipline Score?</summary><p>A transparent 0–100 score built from your own trades: did you set a stop, follow your plan, trade on emotion, or overtrade? We show exactly how it's calculated.</p></details>
-        <details><summary>Is my data safe?</summary><p>In this version your data stays on your own device. Nothing is sold, and there are no ads.</p></details>
+        <details open><summary>What exactly does ChintasMoney do?</summary><p>You log your trades. It calculates a <b>Discipline Score</b>, names your <b>trader personality</b>, ranks your repeating <b>mistakes</b>, tracks streaks &amp; badges, and gives you free <b>risk tools</b> — so you improve your behaviour, which is what actually decides your P&amp;L.</p></details>
+        <details><summary>Do you give buy/sell tips?</summary><p>No. Never. Zero trading calls, tips, or investment advice. It's a self-awareness &amp; journaling tool that mirrors <em>your</em> behaviour — nothing more.</p></details>
+        <details><summary>Do I need to connect my broker?</summary><p>No. You log trades yourself or import a CSV. Your data, your mirror. No broker login, no market-data fees.</p></details>
+        <details><summary>How does the business make money?</summary><p>Simple subscriptions — Free forever, Plus ₹199/mo, Pro ₹499/mo, with a 7-day Pro trial. We sell <b>intelligence and clarity</b>, never your data, and never trading products.</p></details>
+        <details><summary>Is my data safe?</summary><p>In this version your data stays on your own device. Nothing is sold and there are no ads.</p></details>
         <details><summary>Is this SEBI-registered advice?</summary><p>No. It is not investment advice and makes no return claims. F&amp;O trading is risky and most traders lose money.</p></details>
       </div>
     </div>
   </section>
 
   <!-- CTA -->
-  <section class="section"><div class="container">
-    <div class="cta-band reveal">
-      <h2>See your real trading self in 2 minutes.</h2>
-      <p>Free to start. No tips, no calls — just the honest mirror that helps you stop losing to yourself.</p>
-      <a href="app/index.html" class="btn btn-primary btn-lg">Get my Discipline Score →</a>
-    </div>
-  </div></section>
+  <section class="section"><div class="container"><div class="cta-band reveal">
+    <h2>See your real trading self in 2 minutes.</h2>
+    <p>Free to start. No tips, no calls — just the honest mirror and the tools that help you stop losing to yourself.</p>
+    <a href="app/index.html" class="btn btn-primary btn-lg">Get my Discipline Score →</a>
+  </div></div></section>
 
   <!-- Footer -->
   <footer class="footer"><div class="container">
     <div class="foot-grid">
       <a href="#top" class="brand"><img src="assets/logo.png" alt="" /> Chintas<b>Money</b></a>
-      <nav><a href="#how">How it works</a><a href="#features">Features</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a><a href="app/index.html">Launch app</a></nav>
+      <nav><a href="#how">How it works</a><a href="#who">Who it's for</a><a href="#calc">Free tools</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a><a href="app/index.html">Launch app</a></nav>
     </div>
-    <p class="disclaimer">© <span id="year"></span> ChintasMoney · Discipline over profit. ChintasMoney is a trading self-awareness &amp; journaling tool. It gives no buy/sell calls, tips, or investment advice and makes no return claims. F&amp;O trading is risky and most traders lose money.</p>
+    <p class="disclaimer">© <span id="year"></span> ChintasMoney · Discipline over profit. ChintasMoney is a trading self-awareness &amp; journaling tool. It gives no buy/sell calls, tips, or investment advice and makes no return claims. F&amp;O trading is risky and most traders lose money. The risk calculator is an educational tool, not advice.</p>
   </div></footer>
 
   <script src="script.js"></script>

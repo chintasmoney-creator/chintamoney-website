@@ -186,8 +186,41 @@ img{max-width:100%;display:block}
 .foot-grid nav a:hover{color:var(--green)}
 .disclaimer{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);font-size:.8rem;color:var(--muted)}
 
+/* Calculator */
+.calc{display:grid;grid-template-columns:1.15fr .85fr;gap:18px;background:linear-gradient(180deg,var(--panel),var(--bg-2));border:1px solid var(--line-2);border-radius:var(--radius-lg);padding:22px;box-shadow:0 30px 80px rgba(0,0,0,.4)}
+.calc-form .seg{display:flex;background:var(--bg-2);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:16px}
+.seg-btn{flex:1;background:transparent;border:0;color:var(--ink-soft);font-weight:700;font-size:.9rem;padding:.6rem;border-radius:9px;cursor:pointer;transition:.15s}
+.seg-btn.active{color:#04120b;background:linear-gradient(100deg,var(--green),var(--green-2))}
+.seg-btn.active.bear{color:#170608;background:linear-gradient(100deg,var(--red),#c53a48)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.calc label{display:flex;flex-direction:column;gap:6px;font-size:.82rem;color:var(--ink-soft);font-weight:600}
+.calc .opt{color:var(--muted);font-weight:500}
+.calc input{background:var(--bg);border:1px solid var(--line-2);color:var(--ink);border-radius:10px;padding:.6rem .7rem;font:inherit;font-family:var(--mono)}
+.calc input:focus{outline:2px solid var(--green);border-color:transparent}
+.calc-out{background:var(--bg-2);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:12px}
+.verdict{font-family:var(--mono);font-weight:700;font-size:.9rem}
+.verdict .bull{color:var(--green)} .verdict .bear{color:var(--red)} .verdict .warn{color:var(--gold)}
+.out-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.out-grid .o{display:flex;flex-direction:column;gap:2px}
+.out-grid .lbl{color:var(--muted);font-size:.74rem;text-transform:uppercase;letter-spacing:.04em}
+.out-grid b{font-size:1.15rem}
+.calc-note{color:var(--ink-soft);font-size:.85rem;margin:2px 0 0}
+
+/* Bull & Bear band */
+.bullbear{display:grid;grid-template-columns:1fr auto 1fr;gap:24px;align-items:center;text-align:center}
+.bb{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:26px}
+.bb-ic{font-size:2.6rem}
+.bb h3{margin:.4rem 0}
+.bb p{color:var(--ink-soft);margin:0;font-size:.92rem}
+.bull-side{border-color:rgba(34,224,138,.35)} .bear-side{border-color:rgba(255,90,106,.35)}
+.bb-vs{font-family:var(--mono);font-weight:800;color:var(--muted)}
+.bb-tag{grid-column:1/-1;margin:8px 0 0;color:var(--ink-soft)}
+
 /* Responsive */
 @media(max-width:920px){
+  .calc{grid-template-columns:1fr}
+  .bullbear{grid-template-columns:1fr}
+  .bb-vs{padding:6px}
   .hero-grid,.band-grid{grid-template-columns:1fr}
   .steps,.quotes,.plans{grid-template-columns:1fr}
   .bento{grid-template-columns:repeat(2,1fr)}

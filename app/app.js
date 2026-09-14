@@ -17,6 +17,7 @@
     { id: "home", label: "My Report Card", ic: "◎" },
     { id: "log", label: "Log a Trade", ic: "＋" },
     { id: "trades", label: "Trade Journal", ic: "▤" },
+    { id: "calc", label: "Risk Calculator", ic: "🧮" },
     { sep: true, group: "Understand yourself" },
     { id: "insights", label: "Mistake Insights", ic: "🔍" },
     { id: "strategy", label: "Setup Performance", ic: "▦" },
@@ -215,6 +216,56 @@
     return { close: close, body: body };
   }
 
+  // ---- RISK CALCULATOR -----------------------------------------------------
+  var calcSide = "long";
+  VIEWS.calc = function () {
+    var v = el('<div></div>');
+    v.appendChild(topbar("Risk & Position-Size Calculator", "Size every trade before you click. The #1 discipline habit."));
+    var c = el('<div class="card"></div>');
+    c.innerHTML =
+      '<div style="display:flex;gap:8px;margin-bottom:14px">' +
+        '<button class="btn btn-sm" id="kLong">▲ Long / Buy</button>' +
+        '<button class="btn btn-sm" id="kShort">▼ Short / Sell</button></div>' +
+      '<div class="grid g3">' +
+        '<label class="fld"><span>Account capital (₹)</span><input id="kCap" type="number" value="100000"/></label>' +
+        '<label class="fld"><span>Risk per trade (%)</span><input id="kRisk" type="number" value="1" step="0.1"/></label>' +
+        '<label class="fld"><span>Lot / multiplier</span><input id="kLot" type="number" value="1" min="1"/></label>' +
+        '<label class="fld"><span>Entry price</span><input id="kEntry" type="number" value="100" step="0.05"/></label>' +
+        '<label class="fld"><span>Stop-loss</span><input id="kStop" type="number" value="95" step="0.05"/></label>' +
+        '<label class="fld"><span>Target (optional)</span><input id="kTarget" type="number" value="110" step="0.05"/></label>' +
+      '</div>' +
+      '<div id="kOut" style="margin-top:6px"></div>';
+    v.appendChild(c);
+
+    function n(id) { var x = parseFloat(c.querySelector(id).value); return isNaN(x) ? 0 : x; }
+    function inr(x) { return "₹" + Math.round(x).toLocaleString("en-IN"); }
+    function run() {
+      var cap = n("#kCap"), rp = n("#kRisk"), entry = n("#kEntry"), stop = n("#kStop"),
+          target = n("#kTarget"), lot = Math.max(1, n("#kLot") || 1);
+      var riskAmt = cap * rp / 100, perUnit = Math.abs(entry - stop);
+      var units = perUnit > 0 ? Math.floor(riskAmt / perUnit / lot) * lot : 0;
+      var value = units * entry;
+      var stopOK = calcSide === "long" ? stop < entry : stop > entry;
+      var rr = 0, reward = 0, rewUnit = 0, tOK = true;
+      if (target > 0) { rewUnit = calcSide === "long" ? target - entry : entry - target; tOK = rewUnit > 0; reward = units * Math.max(0, rewUnit); rr = perUnit > 0 ? Math.max(0, rewUnit) / perUnit : 0; }
+      var badge = !stopOK ? '<span class="badge b-red">⚠ stop on wrong side</span>'
+        : (target > 0 && !tOK) ? '<span class="badge b-red">⚠ target on wrong side</span>'
+        : rr >= 2 ? '<span class="badge b-green">▲ strong setup · R:R ' + rr.toFixed(1) + '</span>'
+        : rr && rr < 1 ? '<span class="badge b-yellow">⚠ poor risk:reward</span>'
+        : '<span class="badge b-navy">' + (calcSide === "long" ? "long" : "short") + ' setup</span>';
+      var rows = [["You risk", inr(riskAmt), "neg"], ["Position size", units.toLocaleString("en-IN") + (lot > 1 ? " (" + (units / lot) + " lots)" : " units"), ""],
+        ["Position value", inr(value), ""], ["Risk : Reward", rr ? "1 : " + rr.toFixed(2) : "—", rr >= 2 ? "pos" : ""],
+        ["Potential reward", reward ? inr(reward) : "—", "pos"], ["Reward %", value && reward ? "+" + (reward / value * 100).toFixed(1) + "%" : "—", "pos"]];
+      c.querySelector("#kOut").innerHTML = '<div style="margin:10px 0">' + badge + '</div><div class="grid g3">' +
+        rows.map(function (r) { return '<div class="card" style="padding:12px"><div class="hint">' + r[0] + '</div><div class="mono ' + r[2] + '" style="font-size:1.2rem;font-weight:800">' + r[1] + '</div></div>'; }).join("") + '</div>';
+    }
+    ["#kCap", "#kRisk", "#kLot", "#kEntry", "#kStop", "#kTarget"].forEach(function (id) { c.querySelector(id).addEventListener("input", run); });
+    c.querySelector("#kLong").addEventListener("click", function () { calcSide = "long"; run(); });
+    c.querySelector("#kShort").addEventListener("click", function () { calcSide = "short"; run(); });
+    run();
+    return v;
+  };
+
   // ---- CSV export / import -------------------------------------------------
   var CSV_COLS = ["symbol", "side", "qty", "entry", "exit", "plannedSL", "setup", "exit_reason", "emotion", "date"];
   function exportCSV() {
@@ -391,6 +442,16 @@
     v.appendChild(pc);
 
     v.appendChild(el('<h2 style="margin:22px 0 8px;font-size:1.15rem">Subscription</h2>'));
+    // 7-day Pro trial
+    var trialLeft = s.profile.trialEndsAt ? Math.ceil((new Date(s.profile.trialEndsAt) - Date.now()) / 86400000) : 0;
+    if (trialLeft > 0) {
+      v.appendChild(el('<div class="notice" style="background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.35);color:#148a3c">🎉 Pro trial active — <b>' + trialLeft + ' day(s)</b> left. Enjoy every feature.</div>'));
+    } else if (s.profile.plan === "free") {
+      var tb = el('<div class="card" style="border-color:var(--emerald);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><b>Try Pro free for 7 days</b><div class="hint">Unlock everything — no card needed in this preview.</div></div></div>');
+      var tbtn = el('<button class="btn btn-primary">Start 7-day trial</button>');
+      tbtn.addEventListener("click", function () { CM.setProfile({ plan: "pro", trialEndsAt: new Date(Date.now() + 7 * 86400000).toISOString() }); render(); });
+      tb.appendChild(tbtn); v.appendChild(tb);
+    }
     var plans = el('<div class="plans"></div>');
     Object.keys(CM.PLANS).forEach(function (id) {
       var p = CM.PLANS[id], cur = s.profile.plan === id;
